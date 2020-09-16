@@ -60,6 +60,7 @@ const SMC100Chained::StatusCharSet SMC100Chained::StatusLibrary[] =
 SMC100Chained::SMC100Chained(HardwareSerial *serial, const uint8_t* addresses, const uint8_t addresscount)
 {
 	SerialPort = serial;
+	SerialPort->begin(57600);
 	MotorCount = addresscount;
 	CurrentCommand = NULL;
 	CurrentCommandParameter = 0.0;
@@ -203,6 +204,7 @@ void SMC100Chained::MoveAbsolute(uint8_t MotorIndex, float Target)
 		Serial.print("<SMCERROR>(Motor index too large)");
 		return;
 	}
+	/*
 	if (Target < MotorState[MotorIndex].PositionLimitNegative)
 	{
 		Target = MotorState[MotorIndex].PositionLimitNegative;
@@ -211,6 +213,7 @@ void SMC100Chained::MoveAbsolute(uint8_t MotorIndex, float Target)
 	{
 		Target = MotorState[MotorIndex].PositionLimitPositive;
 	}
+	*/
 	CommandEnqueue(MotorIndex, CommandType::MoveAbs, Target, CommandGetSetType::Set);
 }
 
@@ -1020,6 +1023,20 @@ bool SMC100Chained::CommandQueuePullToCurrentCommand()
 		CurrentCommandAddress = MotorState[CurrentCommandMotorIndex].Address;
 		CommandQueueRetreat();
 		Status = true;
+		if (Verbose)
+		{
+			Serial.print("<SMC100Dequeue>(");
+			Serial.print(CurrentCommand->CommandChar);
+			Serial.print(",");
+			Serial.print(CurrentCommandMotorIndex);
+			Serial.print(",");
+			Serial.print(CurrentCommandAddress);
+			Serial.print(",");
+			Serial.print(static_cast<uint8_t>(CurrentCommandGetOrSet));
+			Serial.print(",");
+			Serial.print(CurrentCommandParameter);
+			Serial.print(")\n");
+		}
 		//Serial.print("NP");
 		//Serial.print(CurrentCommandParameter);
 		//Serial.print("\n");
