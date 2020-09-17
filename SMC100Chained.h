@@ -163,6 +163,9 @@ class SMC100Chained
 		bool ConvertMotorAddressToIndex(uint8_t Address, uint8_t* MotorIndexReturn);
 		void CheckAllPollPosition();
 		void CheckAllPollStatus();
+		void SendErrorCommands(uint8_t MotorIndex);
+		void UpdateCommandErrors(uint8_t MotorIndex, char ErrorCode);
+		const char* ConvertToErrorString(char ErrorCode);
 		static const uint32_t PollStatusTimeInterval;
 		static const uint32_t PollPositionTimeInterval;
 		static const CommandStruct CommandLibrary[];
