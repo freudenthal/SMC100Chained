@@ -133,7 +133,6 @@ class SMC100Chained
 		uint8_t CommandQueueCount();
 		void CommandQueueAdvance();
 		void CommandQueueRetreat();
-		void CommandCurrentPut(uint8_t MotorIndex, CommandType Type, float Parameter, CommandGetSetType GetOrSet);
 		void CommandEnqueue(uint8_t MotorIndex, CommandType Type, float Parameter, CommandGetSetType GetOrSet);
 		void CommandEnqueue(uint8_t MotorIndex, const CommandStruct* CommandPointer, float Parameter, CommandGetSetType GetOrSet);
 		bool CommandQueuePullToCurrentCommand();
