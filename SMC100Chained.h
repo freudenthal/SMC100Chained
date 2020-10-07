@@ -120,6 +120,7 @@ class SMC100Chained
 		void SetHomeCompleteCallback(FinishedListener Callback);
 		void SetMoveCompleteCallback(FinishedListener Callback);
 		void SetGPIOReturnCallback(FinishedListener Callback);
+		void SendGetPosition(uint8_t MotorIndex);
 		float GetPosition(uint8_t MotorIndex);
 		void SetVerbose(bool VerboseToSet);
 	private:
