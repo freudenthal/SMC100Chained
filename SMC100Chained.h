@@ -120,6 +120,7 @@ class SMC100Chained
 		void SetHomeCompleteCallback(FinishedListener Callback);
 		void SetMoveCompleteCallback(FinishedListener Callback);
 		void SetGPIOReturnCallback(FinishedListener Callback);
+		void SendGetPosition(uint8_t MotorIndex);
 		float GetPosition(uint8_t MotorIndex);
 		void SetVerbose(bool VerboseToSet);
 	private:
@@ -133,7 +134,6 @@ class SMC100Chained
 		uint8_t CommandQueueCount();
 		void CommandQueueAdvance();
 		void CommandQueueRetreat();
-		void CommandCurrentPut(uint8_t MotorIndex, CommandType Type, float Parameter, CommandGetSetType GetOrSet);
 		void CommandEnqueue(uint8_t MotorIndex, CommandType Type, float Parameter, CommandGetSetType GetOrSet);
 		void CommandEnqueue(uint8_t MotorIndex, const CommandStruct* CommandPointer, float Parameter, CommandGetSetType GetOrSet);
 		bool CommandQueuePullToCurrentCommand();
@@ -163,6 +163,9 @@ class SMC100Chained
 		bool ConvertMotorAddressToIndex(uint8_t Address, uint8_t* MotorIndexReturn);
 		void CheckAllPollPosition();
 		void CheckAllPollStatus();
+		void SendErrorCommands(uint8_t MotorIndex);
+		void UpdateCommandErrors(uint8_t MotorIndex, char ErrorCode);
+		const char* ConvertToErrorString(char ErrorCode);
 		static const uint32_t PollStatusTimeInterval;
 		static const uint32_t PollPositionTimeInterval;
 		static const CommandStruct CommandLibrary[];
