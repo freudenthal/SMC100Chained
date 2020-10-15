@@ -231,11 +231,6 @@ void SMC100Chained::SendGetPosition(uint8_t MotorIndex)
 	CommandEnqueue(MotorIndex, CommandType::PositionReal, 0, CommandGetSetType::Get);
 }
 
-void SMC100Chained::SendGetPosition(uint8_t MotorIndex)
-{
-	CommandEnqueue(MotorIndex, CommandType::PositionReal, 0, CommandGetSetType::Get);
-}
-
 float SMC100Chained::GetPosition(uint8_t MotorIndex)
 {
 	if (MotorIndex >= MotorCount)
