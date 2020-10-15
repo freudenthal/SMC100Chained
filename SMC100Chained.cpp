@@ -231,6 +231,11 @@ void SMC100Chained::SendGetPosition(uint8_t MotorIndex)
 	CommandEnqueue(MotorIndex, CommandType::PositionReal, 0, CommandGetSetType::Get);
 }
 
+void SMC100Chained::SendGetPosition(uint8_t MotorIndex)
+{
+	CommandEnqueue(MotorIndex, CommandType::PositionReal, 0, CommandGetSetType::Get);
+}
+
 float SMC100Chained::GetPosition(uint8_t MotorIndex)
 {
 	if (MotorIndex >= MotorCount)
@@ -642,6 +647,14 @@ void SMC100Chained::ParseReply()
 				float PositionLimitPositive = atof(ParameterAddress);
 				UpdatePositionLimitPositive(AddressOfReply, PositionLimitPositive);
 			}
+		}
+		if ( (CurrentCommand->Command != CommandType::ErrorCommands) && (CurrentCommand->Command != CommandType::ErrorStatus) )
+		{
+			SendErrorCommands(CurrentCommandMotorIndex);
+		}
+		else
+		{
+			ModeTransitionToIdle();
 		}
 		if ( (CurrentCommand->Command != CommandType::ErrorCommands) && (CurrentCommand->Command != CommandType::ErrorStatus) )
 		{
