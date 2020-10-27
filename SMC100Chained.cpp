@@ -27,6 +27,8 @@ const SMC100Chained::CommandStruct SMC100Chained::CommandLibrary[] =
 	{CommandType::LimitNegative,"SL",CommandParameterType::Float,CommandGetSetType::GetSet},
 	{CommandType::PositionAsSet,"TH",CommandParameterType::None,CommandGetSetType::GetAlways},
 	{CommandType::PositionReal,"TP",CommandParameterType::None,CommandGetSetType::GetAlways},
+	{CommandType::Velocity,"VA",CommandParameterType::None,CommandGetSetType::GetSet},
+	{CommandType::Acceleration,"AC",CommandParameterType::None,CommandGetSetType::GetSet},
 	{CommandType::KeypadEnable,"JM",CommandParameterType::Int,CommandGetSetType::GetSet},
 	{CommandType::ErrorCommands,"TE",CommandParameterType::None,CommandGetSetType::GetAlways},
 	{CommandType::ErrorStatus,"TS",CommandParameterType::None,CommandGetSetType::GetAlways}
@@ -80,6 +82,8 @@ SMC100Chained::SMC100Chained(HardwareSerial *serial, const uint8_t* addresses, c
 		MotorState[Index].AnalogueReading = 0.0;
 		MotorState[Index].PositionLimitNegative = 0.0;
 		MotorState[Index].PositionLimitPositive = 0.0;
+		MotorState[Index].Velocity = 0.0;
+		MotorState[Index].Acceleration = 0.0;
 		MotorState[Index].PollStatus = false;
 		MotorState[Index].PollPosition = false;
 		MotorState[Index].NeedToPollPosition = false;
@@ -109,14 +113,23 @@ SMC100Chained::SMC100Chained(HardwareSerial *serial, const uint8_t* addresses, c
 
 void SMC100Chained::Begin()
 {
+	Mode = ModeType::Idle;
 	for (uint8_t Index = 0; Index < MotorCount; ++Index)
 	{
-		CommandEnqueue(Index, CommandType::ErrorStatus, 0.0, CommandGetSetType::None);
+		CommandEnqueue(Index, CommandType::ErrorStatus, 0.0, CommandGetSetType::Get);
+	}
+}
+
+void SMC100Chained::UpdateAfterHoming()
+{
+	for (uint8_t Index = 0; Index < MotorCount; ++Index)
+	{
 		CommandEnqueue(Index, CommandType::LimitPositive, 0.0, CommandGetSetType::Get);
 		CommandEnqueue(Index, CommandType::LimitNegative, 0.0, CommandGetSetType::Get);
+		CommandEnqueue(Index, CommandType::Velocity, 0.0, CommandGetSetType::Get);
+		CommandEnqueue(Index, CommandType::Acceleration, 0.0, CommandGetSetType::Get);
 		CommandEnqueue(Index, CommandType::GPIOInput, 0.0, CommandGetSetType::None);
 	}
-	Mode = ModeType::Idle;
 }
 
 bool SMC100Chained::IsHomed(uint8_t MotorIndex)
@@ -172,11 +185,16 @@ bool SMC100Chained::IsEnabled(uint8_t MotorIndex)
 	}
 }
 
+void SMC100Chained::PrintMotorIndexError()
+{
+	Serial.print("<SMCERROR>(Motor index too large)");
+}
+
 void SMC100Chained::Enable(uint8_t MotorIndex,bool Setting)
 {
 	if (MotorIndex >= MotorCount)
 	{
-		Serial.print("<SMCERROR>(Motor index too large)");
+		PrintMotorIndexError();
 		return;
 	}
 	float ParamterValue = 0.0;
@@ -208,21 +226,67 @@ void SMC100Chained::Home(uint8_t MotorIndex)
 	}
 }
 
+void SMC100Chained::SendGetVelocity(uint8_t MotorIndex, FinishedListener Callback = NULL)
+{
+	if (MotorIndex >= MotorCount)
+	{
+		PrintMotorIndexError();
+		return;
+	}
+	CommandEnqueue(MotorIndex, CommandType::Velocity, 0.0, CommandGetSetType::Get, Callback);
+}
+
+void SMC100Chained::SendGetAcceleration(uint8_t MotorIndex, FinishedListener Callback = NULL)
+{
+	if (MotorIndex >= MotorCount)
+	{
+		PrintMotorIndexError();
+		return;
+	}
+	CommandEnqueue(MotorIndex, CommandType::Acceleration, 0.0, CommandGetSetType::Get, Callback);
+}
+
+void SMC100Chained::SendSetVelocity(uint8_t MotorIndex, float VelocityToSet, FinishedListener Callback = NULL)
+{
+	if (MotorIndex >= MotorCount)
+	{
+		PrintMotorIndexError();
+		return;
+	}
+	CommandEnqueue(MotorIndex, CommandType::Velocity, VelocityToSet, CommandGetSetType::Set, Callback);
+}
+
+void SMC100Chained::SendSetAcceleration(uint8_t MotorIndex, float AccelerationToSet, FinishedListener Callback = NULL)
+{
+	if (MotorIndex >= MotorCount)
+	{
+		PrintMotorIndexError();
+		return;
+	}
+	CommandEnqueue(MotorIndex, CommandType::Acceleration, AccelerationToSet, CommandGetSetType::Set, Callback);
+}
+
 void SMC100Chained::MoveAbsolute(uint8_t MotorIndex, float Target)
 {
 	if (MotorIndex >= MotorCount)
 	{
-		Serial.print("<SMCERROR>(Motor index too large)");
+		PrintMotorIndexError();
 		return;
 	}
-	//if (Target < MotorState[MotorIndex].PositionLimitNegative)
-	//{
-	//	Target = MotorState[MotorIndex].PositionLimitNegative;
-	//}
-	//if (Target > MotorState[MotorIndex].PositionLimitPositive)
-	//{
-	//	Target = MotorState[MotorIndex].PositionLimitPositive;
-	//}
+	if (Target < MotorState[MotorIndex].PositionLimitNegative)
+	{
+		Target = MotorState[MotorIndex].PositionLimitNegative;
+		Serial.print("<SMCERROR>(Position for motor ");
+		Serial.print(MotorIndex);
+		Serial.print(" is under limit.)\n");
+	}
+	if (Target > MotorState[MotorIndex].PositionLimitPositive)
+	{
+		Target = MotorState[MotorIndex].PositionLimitPositive;
+		Serial.print("<SMCERROR>(Position for motor ");
+		Serial.print(MotorIndex);
+		Serial.print(" is over limit.)\n");
+	}
 	CommandEnqueue(MotorIndex, CommandType::MoveAbs, Target, CommandGetSetType::Set);
 }
 
@@ -231,11 +295,31 @@ void SMC100Chained::SendGetPosition(uint8_t MotorIndex)
 	CommandEnqueue(MotorIndex, CommandType::PositionReal, 0, CommandGetSetType::Get);
 }
 
+float SMC100Chained::GetVelocity(uint8_t MotorIndex)
+{
+	if (MotorIndex >= MotorCount)
+	{
+		PrintMotorIndexError();
+		return NAN;
+	}
+	return MotorState[MotorIndex].Velocity;
+}
+
+float SMC100Chained::GetAcceleration(uint8_t MotorIndex)
+{
+	if (MotorIndex >= MotorCount)
+	{
+		PrintMotorIndexError();
+		return NAN;
+	}
+	return MotorState[MotorIndex].Acceleration;
+}
+
 float SMC100Chained::GetPosition(uint8_t MotorIndex)
 {
 	if (MotorIndex >= MotorCount)
 	{
-		Serial.print("<SMCERROR>(Motor index too large)");
+		PrintMotorIndexError();
 		return NAN;
 	}
 	return MotorState[MotorIndex].Position;
@@ -245,7 +329,7 @@ void SMC100Chained::SendGetGPIOInput(uint8_t MotorIndex)
 {
 	if (MotorIndex >= MotorCount)
 	{
-		Serial.print("<SMCERROR>(Motor index too large)");
+		PrintMotorIndexError();
 		return;
 	}
 	CommandEnqueue(MotorIndex, CommandType::GPIOInput, 0.0, CommandGetSetType::None);
@@ -255,7 +339,7 @@ bool SMC100Chained::GetGPIOInput(uint8_t MotorIndex, uint8_t Pin)
 {
 	if (MotorIndex >= MotorCount)
 	{
-		Serial.print("<SMCERROR>(Motor index too large)");
+		PrintMotorIndexError();
 		return false;
 	}
 	if (Pin > 3)
@@ -270,7 +354,7 @@ void SMC100Chained::SetGPIOOutput(uint8_t MotorIndex, uint8_t Pin, bool Output)
 {
 	if (MotorIndex >= MotorCount)
 	{
-		Serial.print("<SMCERROR>(Motor index too large)");
+		PrintMotorIndexError();
 		return;
 	}
 	if (Pin > 3)
@@ -286,7 +370,7 @@ void SMC100Chained::SetGPIOOutputAll(uint8_t MotorIndex, uint8_t Code)
 {
 	if (MotorIndex >= MotorCount)
 	{
-		Serial.print("<SMCERROR>(Motor index too large)");
+		PrintMotorIndexError();
 		return;
 	}
 	MotorState[MotorIndex].GPIOOutput = Code;
@@ -643,6 +727,22 @@ void SMC100Chained::ParseReply()
 				UpdatePositionLimitPositive(AddressOfReply, PositionLimitPositive);
 			}
 		}
+		else if (CurrentCommand->Command == CommandType::Velocity)
+		{
+			if (CurrentCommandGetOrSet == CommandGetSetType::Get)
+			{
+				float Velocity = atof(ParameterAddress);
+				UpdateVelocity(AddressOfReply, Velocity);
+			}
+		}
+		else if (CurrentCommand->Command == CommandType::Acceleration)
+		{
+			if (CurrentCommandGetOrSet == CommandGetSetType::Get)
+			{
+				float Acceleration = atof(ParameterAddress);
+				UpdateAcceleration(AddressOfReply, Acceleration);
+			}
+		}
 		if ( (CurrentCommand->Command != CommandType::ErrorCommands) && (CurrentCommand->Command != CommandType::ErrorStatus) )
 		{
 			SendErrorCommands(CurrentCommandMotorIndex);
@@ -650,6 +750,10 @@ void SMC100Chained::ParseReply()
 		else
 		{
 			ModeTransitionToIdle();
+		}
+		if (CurrentCommandCompleteCallback != NULL)
+		{
+			CurrentCommandCompleteCallback();
 		}
 	}
 }
@@ -674,6 +778,26 @@ void SMC100Chained::UpdateGPIOInput(uint8_t MotorAddress, uint8_t GPIOInputToSet
 	if (FoundMotor)
 	{
 		MotorState[MotorIndex].GPIOInput = GPIOInputToSet;
+	}
+}
+
+void SMC100Chained::UpdateVelocity(uint8_t MotorAddress, float VelocityToSet)
+{
+	uint8_t MotorIndex = 0;
+	bool FoundMotor = ConvertMotorAddressToIndex(MotorAddress, &MotorIndex);
+	if (FoundMotor)
+	{
+		MotorState[MotorIndex].Velocity = VelocityToSet;
+	}
+}
+
+void SMC100Chained::UpdateAcceleration(uint8_t MotorAddress, float AccelerationToSet)
+{
+	uint8_t MotorIndex = 0;
+	bool FoundMotor = ConvertMotorAddressToIndex(MotorAddress, &MotorIndex);
+	if (FoundMotor)
+	{
+		MotorState[MotorIndex].Acceleration = AccelerationToSet;
 	}
 }
 
@@ -738,10 +862,14 @@ void SMC100Chained::CheckAllPollPosition()
 	if (AllMotorsPolled)
 	{
 		PollPosition = false;
-		if ( (NeedToFireHomeComplete) && (HomeCompleteCallback != NULL) )
+		if (NeedToFireHomeComplete)
 		{
 			NeedToFireHomeComplete = false;
-			HomeCompleteCallback();
+			if (HomeCompleteCallback != NULL)
+			{
+				HomeCompleteCallback();
+			}
+			UpdateAfterHoming();
 		}
 		if ( (NeedToFireMoveComplete) && (MoveCompleteCallback != NULL) )
 		{
@@ -978,6 +1106,25 @@ void SMC100Chained::UpdateStateOnSending()
 		MotorState[CurrentCommandMotorIndex].NeedToPollPosition = true;
 		PrepareErrorStatusPolling(CurrentCommandMotorIndex);
 	}
+	if (CurrentCommandGetOrSet == CommandGetSetType::Set)
+	{
+		if (CurrentCommand->Command == CommandType::Velocity)
+		{
+			MotorState[CurrentCommandMotorIndex].Velocity = CurrentCommandParameter;
+		}
+		else if (CurrentCommand->Command == CommandType::Acceleration)
+		{
+			MotorState[CurrentCommandMotorIndex].Acceleration = CurrentCommandParameter;
+		}
+		else if (CurrentCommand->Command == CommandType::LimitPositive)
+		{
+			MotorState[CurrentCommandMotorIndex].PositionLimitPositive = CurrentCommandParameter;
+		}
+		else if (CurrentCommand->Command == CommandType::LimitNegative)
+		{
+			MotorState[CurrentCommandMotorIndex].PositionLimitNegative = CurrentCommandParameter;
+		}
+	}
 	if ( (CurrentCommandGetOrSet == CommandGetSetType::Get) || (CurrentCommand->GetSetType == CommandGetSetType::GetAlways) )
 	{
 		ModeTransitionToWaitForReply();
@@ -989,6 +1136,10 @@ void SMC100Chained::UpdateStateOnSending()
 	else
 	{
 		ModeTransitionToIdle();
+		if (CurrentCommandCompleteCallback != NULL)
+		{
+			CurrentCommandCompleteCallback();
+		}
 	}
 }
 
@@ -1065,16 +1216,21 @@ void SMC100Chained::EnqueuePositionRequest(uint8_t MotorIndex)
 }
 void SMC100Chained::CommandEnqueue(uint8_t MotorIndex, CommandType Type, float Parameter, CommandGetSetType GetOrSet)
 {
-	//CommandStruct* CommandPointer = const_cast<CommandStruct*>(&CommandLibrary[static_cast<uint8_t>(Type)]);
 	const CommandStruct* CommandPointer = &CommandLibrary[static_cast<uint8_t>(Type)];
-	CommandEnqueue(MotorIndex, CommandPointer, Parameter, GetOrSet);
+	CommandEnqueue(MotorIndex, CommandPointer, Parameter, GetOrSet, NULL);
 }
-void SMC100Chained::CommandEnqueue(uint8_t MotorIndex, const CommandStruct* CommandPointer, float Parameter, CommandGetSetType GetOrSet)
+void SMC100Chained::CommandEnqueue(uint8_t MotorIndex, CommandType Type, float Parameter, CommandGetSetType GetOrSet, FinishedListener CommandCompleteCallback)
+{
+	const CommandStruct* CommandPointer = &CommandLibrary[static_cast<uint8_t>(Type)];
+	CommandEnqueue(MotorIndex, CommandPointer, Parameter, GetOrSet, CommandCompleteCallback);
+}
+void SMC100Chained::CommandEnqueue(uint8_t MotorIndex, const CommandStruct* CommandPointer, float Parameter, CommandGetSetType GetOrSet, FinishedListener CommandCompleteCallback)
 {
 	CommandQueue[CommandQueueHead].Command = CommandPointer;
 	CommandQueue[CommandQueueHead].Parameter = Parameter;
 	CommandQueue[CommandQueueHead].MotorIndex = MotorIndex;
 	CommandQueue[CommandQueueHead].GetOrSet = GetOrSet;
+	CommandQueue[CommandQueueHead].CompleteCallback = CommandCompleteCallback;
 	if (Verbose)
 	{
 		Serial.print("<SMCV>(Enqueue ");
@@ -1108,6 +1264,7 @@ bool SMC100Chained::CommandQueuePullToCurrentCommand()
 		CurrentCommandGetOrSet = CommandQueue[CommandQueueTail].GetOrSet;
 		CurrentCommandMotorIndex = CommandQueue[CommandQueueTail].MotorIndex;
 		CurrentCommandAddress = MotorState[CurrentCommandMotorIndex].Address;
+		CurrentCommandCompleteCallback = CommandQueue[CommandQueueTail].CommandCompleteCallback;
 		CommandQueueRetreat();
 		Status = true;
 		if (Verbose)

@@ -28,6 +28,8 @@ class SMC100Chained
 			LimitNegative,
 			PositionAsSet,
 			PositionReal,
+			Velocity,
+			Acceleration,
 			KeypadEnable,
 			ErrorCommands,
 			ErrorStatus,
@@ -78,6 +80,7 @@ class SMC100Chained
 			CommandGetSetType GetOrSet;
 			uint8_t MotorIndex;
 			float Parameter;
+			FinishedListener CompleteCallback;
 		};
 		struct StatusCharSet
 		{
@@ -95,6 +98,8 @@ class SMC100Chained
 			float AnalogueReading;
 			float PositionLimitNegative;
 			float PositionLimitPositive;
+			float Velocity;
+			float Acceleration;
 			bool PollStatus;
 			bool PollPosition;
 			bool NeedToPollPosition;
@@ -123,7 +128,14 @@ class SMC100Chained
 		void SendGetPosition(uint8_t MotorIndex);
 		float GetPosition(uint8_t MotorIndex);
 		void SetVerbose(bool VerboseToSet);
+		void SendGetVelocity(uint8_t MotorIndex, FinishedListener Callback);
+		void SendGetAcceleration(uint8_t MotorIndex, FinishedListener Callback);
+		void SendSetVelocity(uint8_t MotorIndex, float VelocityToSet, FinishedListener Callback);
+		void SendSetAcceleration(uint8_t MotorIndex, float AccelerationToSet, FinishedListener Callback);
+		float GetVelocity(uint8_t MotorIndex);
+		float GetAcceleration(uint8_t MotorIndex);
 	private:
+		void PrintMotorIndexError();
 		void CheckCommandQueue();
 		void CheckForCommandReply();
 		void CheckWaitAfterSending();
@@ -135,7 +147,8 @@ class SMC100Chained
 		void CommandQueueAdvance();
 		void CommandQueueRetreat();
 		void CommandEnqueue(uint8_t MotorIndex, CommandType Type, float Parameter, CommandGetSetType GetOrSet);
-		void CommandEnqueue(uint8_t MotorIndex, const CommandStruct* CommandPointer, float Parameter, CommandGetSetType GetOrSet);
+		void CommandEnqueue(uint8_t MotorIndex, CommandType Type, float Parameter, CommandGetSetType GetOrSet, FinishedListener CommandCompleteCallback);
+		void CommandEnqueue(uint8_t MotorIndex, const CommandStruct* CommandPointer, float Parameter, CommandGetSetType GetOrSet, FinishedListener CommandCompleteCallback);
 		bool CommandQueuePullToCurrentCommand();
 		void EnqueueGetLimitNegative(uint8_t MotorIndex);
 		void EnqueueGetLimitPositive(uint8_t MotorIndex);
@@ -187,6 +200,7 @@ class SMC100Chained
 		FinishedListener MoveCompleteCallback;
 		FinishedListener HomeCompleteCallback;
 		FinishedListener GPIOReturnCallback;
+		FinishedListener CurrentCommandCompleteCallback;
 		bool NeedToFireMoveComplete;
 		bool NeedToFireHomeComplete;
 		bool PollStatus;
