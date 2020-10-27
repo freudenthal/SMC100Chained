@@ -125,15 +125,16 @@ class SMC100Chained
 		void SetHomeCompleteCallback(FinishedListener Callback);
 		void SetMoveCompleteCallback(FinishedListener Callback);
 		void SetGPIOReturnCallback(FinishedListener Callback);
-		void SendGetPosition(uint8_t MotorIndex);
 		float GetPosition(uint8_t MotorIndex);
 		void SetVerbose(bool VerboseToSet);
-		void SendGetVelocity(uint8_t MotorIndex, FinishedListener Callback);
-		void SendGetAcceleration(uint8_t MotorIndex, FinishedListener Callback);
-		void SendSetVelocity(uint8_t MotorIndex, float VelocityToSet, FinishedListener Callback);
-		void SendSetAcceleration(uint8_t MotorIndex, float AccelerationToSet, FinishedListener Callback);
+		void SendGetVelocity(uint8_t MotorIndex, FinishedListener Callback = NULL);
+		void SendGetAcceleration(uint8_t MotorIndex, FinishedListener Callback = NULL);
+		void SendSetVelocity(uint8_t MotorIndex, float VelocityToSet, FinishedListener Callback = NULL);
+		void SendSetAcceleration(uint8_t MotorIndex, float AccelerationToSet, FinishedListener Callback = NULL);
 		float GetVelocity(uint8_t MotorIndex);
 		float GetAcceleration(uint8_t MotorIndex);
+		void SendGetErrorStatus(uint8_t MotorIndex, FinishedListener Callback = NULL);
+		void SendGetPosition(uint8_t MotorIndex, FinishedListener Callback = NULL);
 	private:
 		void PrintMotorIndexError();
 		void CheckCommandQueue();

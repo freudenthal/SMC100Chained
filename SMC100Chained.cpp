@@ -226,7 +226,7 @@ void SMC100Chained::Home(uint8_t MotorIndex)
 	}
 }
 
-void SMC100Chained::SendGetVelocity(uint8_t MotorIndex, FinishedListener Callback = NULL)
+void SMC100Chained::SendGetVelocity(uint8_t MotorIndex, FinishedListener Callback)
 {
 	if (MotorIndex >= MotorCount)
 	{
@@ -236,7 +236,7 @@ void SMC100Chained::SendGetVelocity(uint8_t MotorIndex, FinishedListener Callbac
 	CommandEnqueue(MotorIndex, CommandType::Velocity, 0.0, CommandGetSetType::Get, Callback);
 }
 
-void SMC100Chained::SendGetAcceleration(uint8_t MotorIndex, FinishedListener Callback = NULL)
+void SMC100Chained::SendGetAcceleration(uint8_t MotorIndex, FinishedListener Callback)
 {
 	if (MotorIndex >= MotorCount)
 	{
@@ -246,7 +246,7 @@ void SMC100Chained::SendGetAcceleration(uint8_t MotorIndex, FinishedListener Cal
 	CommandEnqueue(MotorIndex, CommandType::Acceleration, 0.0, CommandGetSetType::Get, Callback);
 }
 
-void SMC100Chained::SendSetVelocity(uint8_t MotorIndex, float VelocityToSet, FinishedListener Callback = NULL)
+void SMC100Chained::SendSetVelocity(uint8_t MotorIndex, float VelocityToSet, FinishedListener Callback)
 {
 	if (MotorIndex >= MotorCount)
 	{
@@ -256,7 +256,7 @@ void SMC100Chained::SendSetVelocity(uint8_t MotorIndex, float VelocityToSet, Fin
 	CommandEnqueue(MotorIndex, CommandType::Velocity, VelocityToSet, CommandGetSetType::Set, Callback);
 }
 
-void SMC100Chained::SendSetAcceleration(uint8_t MotorIndex, float AccelerationToSet, FinishedListener Callback = NULL)
+void SMC100Chained::SendSetAcceleration(uint8_t MotorIndex, float AccelerationToSet, FinishedListener Callback)
 {
 	if (MotorIndex >= MotorCount)
 	{
@@ -290,9 +290,24 @@ void SMC100Chained::MoveAbsolute(uint8_t MotorIndex, float Target)
 	CommandEnqueue(MotorIndex, CommandType::MoveAbs, Target, CommandGetSetType::Set);
 }
 
-void SMC100Chained::SendGetPosition(uint8_t MotorIndex)
+void SMC100Chained::SendGetErrorStatus(uint8_t MotorIndex, FinishedListener Callback)
 {
-	CommandEnqueue(MotorIndex, CommandType::PositionReal, 0, CommandGetSetType::Get);
+	if (MotorIndex >= MotorCount)
+	{
+		PrintMotorIndexError();
+		return;
+	}
+	CommandEnqueue(MotorIndex, CommandType::ErrorStatus, 0, CommandGetSetType::Get, Callback);
+}
+
+void SMC100Chained::SendGetPosition(uint8_t MotorIndex, FinishedListener Callback)
+{
+	if (MotorIndex >= MotorCount)
+	{
+		PrintMotorIndexError();
+		return;
+	}
+	CommandEnqueue(MotorIndex, CommandType::PositionReal, 0, CommandGetSetType::Get, Callback);
 }
 
 float SMC100Chained::GetVelocity(uint8_t MotorIndex)
@@ -840,9 +855,12 @@ void SMC100Chained::UpdatePosition(uint8_t MotorAddress, float PositionToSet)
 		MotorState[MotorIndex].Position = PositionToSet;
 		MotorState[MotorIndex].NeedToPollPosition = false;
 		MotorState[MotorIndex].PollPosition = false;
-		if (MotorState[MotorIndex].FinishedCallback != NULL)
+		if (MotorState[MotorIndex].Status == StatusType::Ready)
 		{
-			MotorState[MotorIndex].FinishedCallback();
+			if (MotorState[MotorIndex].FinishedCallback != NULL)
+			{
+				MotorState[MotorIndex].FinishedCallback();
+			}
 		}
 		CheckAllPollPosition();
 	}
@@ -1252,6 +1270,7 @@ void SMC100Chained::SendErrorCommands(uint8_t MotorIndex)
 	CurrentCommandGetOrSet = CommandGetSetType::Get;
 	CurrentCommandMotorIndex = MotorIndex;
 	CurrentCommandAddress = MotorState[CurrentCommandMotorIndex].Address;
+	CurrentCommandCompleteCallback = NULL;
 	SendCurrentCommand();
 }
 bool SMC100Chained::CommandQueuePullToCurrentCommand()
