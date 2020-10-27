@@ -215,14 +215,14 @@ void SMC100Chained::MoveAbsolute(uint8_t MotorIndex, float Target)
 		Serial.print("<SMCERROR>(Motor index too large)");
 		return;
 	}
-	if (Target < MotorState[MotorIndex].PositionLimitNegative)
-	{
-		Target = MotorState[MotorIndex].PositionLimitNegative;
-	}
-	if (Target > MotorState[MotorIndex].PositionLimitPositive)
-	{
-		Target = MotorState[MotorIndex].PositionLimitPositive;
-	}
+	//if (Target < MotorState[MotorIndex].PositionLimitNegative)
+	//{
+	//	Target = MotorState[MotorIndex].PositionLimitNegative;
+	//}
+	//if (Target > MotorState[MotorIndex].PositionLimitPositive)
+	//{
+	//	Target = MotorState[MotorIndex].PositionLimitPositive;
+	//}
 	CommandEnqueue(MotorIndex, CommandType::MoveAbs, Target, CommandGetSetType::Set);
 }
 
@@ -755,7 +755,12 @@ void SMC100Chained::UpdateCommandErrors(uint8_t MotorAddress, char ErrorChar)
 {
 	if (ErrorChar == 'H')
 	{
-		MotorState[MotorIndex].HasBeenHomed = false;
+		uint8_t MotorIndex = 0;
+		bool FoundMotor = ConvertMotorAddressToIndex(MotorAddress, &MotorIndex);
+		if (FoundMotor)
+		{
+			MotorState[MotorIndex].HasBeenHomed = false;
+		}
 	}
 }
 
