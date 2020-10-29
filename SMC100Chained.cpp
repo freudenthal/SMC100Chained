@@ -1283,7 +1283,7 @@ bool SMC100Chained::CommandQueuePullToCurrentCommand()
 		CurrentCommandGetOrSet = CommandQueue[CommandQueueTail].GetOrSet;
 		CurrentCommandMotorIndex = CommandQueue[CommandQueueTail].MotorIndex;
 		CurrentCommandAddress = MotorState[CurrentCommandMotorIndex].Address;
-		CurrentCommandCompleteCallback = CommandQueue[CommandQueueTail].CommandCompleteCallback;
+		CurrentCommandCompleteCallback = CommandQueue[CommandQueueTail].CompleteCallback;
 		CommandQueueRetreat();
 		Status = true;
 		if (Verbose)

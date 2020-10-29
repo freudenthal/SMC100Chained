@@ -147,6 +147,7 @@ class SMC100Chained
 		uint8_t CommandQueueCount();
 		void CommandQueueAdvance();
 		void CommandQueueRetreat();
+		void UpdateAfterHoming();
 		void CommandEnqueue(uint8_t MotorIndex, CommandType Type, float Parameter, CommandGetSetType GetOrSet);
 		void CommandEnqueue(uint8_t MotorIndex, CommandType Type, float Parameter, CommandGetSetType GetOrSet, FinishedListener CommandCompleteCallback);
 		void CommandEnqueue(uint8_t MotorIndex, const CommandStruct* CommandPointer, float Parameter, CommandGetSetType GetOrSet, FinishedListener CommandCompleteCallback);
@@ -173,6 +174,8 @@ class SMC100Chained
 		void UpdatePositionLimitNegative(uint8_t MotorAddress, float PositionLimitNegativeToSet);
 		void UpdateAnalogue(uint8_t MotorAddress, float AnalogueToSet);
 		void UpdateStatus(uint8_t MotorAddress, StatusType Status);
+		void UpdateVelocity(uint8_t MotorAddress, float VelocityToSet);
+		void UpdateAcceleration(uint8_t MotorAddress, float AccelerationToSet);
 		void UpdateStateOnSending();
 		bool ConvertMotorAddressToIndex(uint8_t Address, uint8_t* MotorIndexReturn);
 		void CheckAllPollPosition();
