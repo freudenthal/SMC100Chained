@@ -3,7 +3,7 @@
 
 #include "Arduino.h"
 
-#define SMC100ChainedQueueCount 16
+#define SMC100ChainedQueueCount 32
 #define SMC100ChainedMaxMotors 3
 #define SMC100ChainedReplyBufferSize 32
 
@@ -135,6 +135,7 @@ class SMC100Chained
 		float GetAcceleration(uint8_t MotorIndex);
 		void SendGetErrorStatus(uint8_t MotorIndex, FinishedListener Callback = NULL);
 		void SendGetPosition(uint8_t MotorIndex, FinishedListener Callback = NULL);
+		void UpdateMotorParameters(uint8_t MotorIndex);
 	private:
 		void PrintMotorIndexError();
 		void CheckCommandQueue();
