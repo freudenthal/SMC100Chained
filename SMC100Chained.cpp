@@ -27,8 +27,8 @@ const SMC100Chained::CommandStruct SMC100Chained::CommandLibrary[] =
 	{CommandType::LimitNegative,"SL",CommandParameterType::Float,CommandGetSetType::GetSet},
 	{CommandType::PositionAsSet,"TH",CommandParameterType::None,CommandGetSetType::GetAlways},
 	{CommandType::PositionReal,"TP",CommandParameterType::None,CommandGetSetType::GetAlways},
-	{CommandType::Velocity,"VA",CommandParameterType::None,CommandGetSetType::GetSet},
-	{CommandType::Acceleration,"AC",CommandParameterType::None,CommandGetSetType::GetSet},
+	{CommandType::Velocity,"VA",CommandParameterType::Float,CommandGetSetType::GetSet},
+	{CommandType::Acceleration,"AC",CommandParameterType::Float,CommandGetSetType::GetSet},
 	{CommandType::KeypadEnable,"JM",CommandParameterType::Int,CommandGetSetType::GetSet},
 	{CommandType::ErrorCommands,"TE",CommandParameterType::None,CommandGetSetType::GetAlways},
 	{CommandType::ErrorStatus,"TS",CommandParameterType::None,CommandGetSetType::GetAlways}
@@ -117,19 +117,29 @@ void SMC100Chained::Begin()
 	for (uint8_t Index = 0; Index < MotorCount; ++Index)
 	{
 		CommandEnqueue(Index, CommandType::ErrorStatus, 0.0, CommandGetSetType::Get);
-	}
-}
-
-void SMC100Chained::UpdateAfterHoming()
-{
-	for (uint8_t Index = 0; Index < MotorCount; ++Index)
-	{
 		CommandEnqueue(Index, CommandType::LimitPositive, 0.0, CommandGetSetType::Get);
 		CommandEnqueue(Index, CommandType::LimitNegative, 0.0, CommandGetSetType::Get);
 		CommandEnqueue(Index, CommandType::Velocity, 0.0, CommandGetSetType::Get);
 		CommandEnqueue(Index, CommandType::Acceleration, 0.0, CommandGetSetType::Get);
 		CommandEnqueue(Index, CommandType::GPIOInput, 0.0, CommandGetSetType::None);
 	}
+}
+
+void SMC100Chained::UpdateAfterHoming()
+{
+	for (uint8_t MotorIndex = 0; MotorIndex < MotorCount; ++MotorIndex)
+	{
+		UpdateMotorParameters(MotorIndex);
+	}
+}
+
+void SMC100Chained::UpdateMotorParameters(uint8_t MotorIndex)
+{
+	CommandEnqueue(MotorIndex, CommandType::LimitPositive, 0.0, CommandGetSetType::Get);
+	CommandEnqueue(MotorIndex, CommandType::LimitNegative, 0.0, CommandGetSetType::Get);
+	CommandEnqueue(MotorIndex, CommandType::Velocity, 0.0, CommandGetSetType::Get);
+	CommandEnqueue(MotorIndex, CommandType::Acceleration, 0.0, CommandGetSetType::Get);
+	CommandEnqueue(MotorIndex, CommandType::GPIOInput, 0.0, CommandGetSetType::None);
 }
 
 bool SMC100Chained::IsHomed(uint8_t MotorIndex)
@@ -219,6 +229,7 @@ void SMC100Chained::Home(uint8_t MotorIndex)
 			NeedToFireHomeComplete = false;
 			HomeCompleteCallback();
 		}
+		UpdateMotorParameters(MotorIndex);
 	}
 	else
 	{
@@ -758,6 +769,10 @@ void SMC100Chained::ParseReply()
 				UpdateAcceleration(AddressOfReply, Acceleration);
 			}
 		}
+		if (CurrentCommandCompleteCallback != NULL)
+		{
+			CurrentCommandCompleteCallback();
+		}
 		if ( (CurrentCommand->Command != CommandType::ErrorCommands) && (CurrentCommand->Command != CommandType::ErrorStatus) )
 		{
 			SendErrorCommands(CurrentCommandMotorIndex);
@@ -765,10 +780,6 @@ void SMC100Chained::ParseReply()
 		else
 		{
 			ModeTransitionToIdle();
-		}
-		if (CurrentCommandCompleteCallback != NULL)
-		{
-			CurrentCommandCompleteCallback();
 		}
 	}
 }
@@ -880,6 +891,10 @@ void SMC100Chained::CheckAllPollPosition()
 	if (AllMotorsPolled)
 	{
 		PollPosition = false;
+		if (Verbose)
+		{
+			Serial.print("<SMCV>(All motors position polled)\n");
+		}
 		if (NeedToFireHomeComplete)
 		{
 			NeedToFireHomeComplete = false;
@@ -1012,6 +1027,12 @@ void SMC100Chained::CheckAllPollStatus()
 			{
 				MotorState[Index].NeedToPollPosition = false;
 				PreparePositionPolling(Index);
+				if (Verbose)
+				{
+					Serial.print("<SMCV>(Poll status done ");
+					Serial.print(Index);
+					Serial.print(" polling position.)\n");
+				}
 			}
 		}
 	}
@@ -1115,6 +1136,7 @@ void SMC100Chained::UpdateStateOnSending()
 		{
 			NeedToFireMoveComplete = true;
 			MotorState[CurrentCommandMotorIndex].NeedToPollPosition = true;
+			MotorState[CurrentCommandMotorIndex].Status = StatusType::Moving;
 			PrepareErrorStatusPolling(CurrentCommandMotorIndex);
 		}
 	}
@@ -1143,6 +1165,10 @@ void SMC100Chained::UpdateStateOnSending()
 			MotorState[CurrentCommandMotorIndex].PositionLimitNegative = CurrentCommandParameter;
 		}
 	}
+	if ( (CurrentCommandCompleteCallback != NULL) && (CurrentCommandGetOrSet == CommandGetSetType::Set) )
+	{
+		CurrentCommandCompleteCallback();
+	}
 	if ( (CurrentCommandGetOrSet == CommandGetSetType::Get) || (CurrentCommand->GetSetType == CommandGetSetType::GetAlways) )
 	{
 		ModeTransitionToWaitForReply();
@@ -1154,10 +1180,6 @@ void SMC100Chained::UpdateStateOnSending()
 	else
 	{
 		ModeTransitionToIdle();
-		if (CurrentCommandCompleteCallback != NULL)
-		{
-			CurrentCommandCompleteCallback();
-		}
 	}
 }
 
@@ -1297,7 +1319,9 @@ bool SMC100Chained::CommandQueuePullToCurrentCommand()
 			Serial.print(",");
 			Serial.print(static_cast<uint8_t>(CurrentCommandGetOrSet));
 			Serial.print(",");
-			Serial.print(CurrentCommandParameter);
+			Serial.print(CurrentCommandParameter,5);
+			Serial.print(",");
+			Serial.print( ( (CurrentCommandCompleteCallback != NULL) ? 'Y' : 'N' ) );
 			Serial.print(")\n");
 		}
 		//Serial.print("NP");
