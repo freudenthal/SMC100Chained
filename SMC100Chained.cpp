@@ -86,6 +86,7 @@ SMC100Chained::SMC100Chained(HardwareSerial *serial, const uint8_t* addresses, c
 		MotorState[Index].Acceleration = 0.0;
 		MotorState[Index].PollStatus = false;
 		MotorState[Index].PollPosition = false;
+		MotorState[Index].ReverseDirection = false;
 		MotorState[Index].NeedToPollPosition = false;
 		MotorState[Index].FinishedCallback = NULL;
 	}
@@ -215,6 +216,23 @@ void SMC100Chained::Enable(uint8_t MotorIndex,bool Setting)
 	CommandEnqueue(MotorIndex, CommandType::Enable, ParamterValue, CommandGetSetType::Set);
 }
 
+bool SMC100Chained::GetReversed(uint8_t MotorIndex)
+{
+	if (MotorIndex < MotorCount)
+	{
+		return MotorState[MotorIndex].ReverseDirection;
+	}
+	return false;
+}
+
+void SMC100Chained::SetReversed(uint8_t MotorIndex, bool Setting)
+{
+	if (MotorIndex < MotorCount)
+	{
+		MotorState[MotorIndex].ReverseDirection = Setting;
+	}
+}
+
 bool SMC100Chained::IsBusy()
 {
 	return Busy;
@@ -298,6 +316,10 @@ void SMC100Chained::MoveAbsolute(uint8_t MotorIndex, float Target)
 		Serial.print(MotorIndex);
 		Serial.print(" is over limit.)\n");
 	}
+	if (MotorState[MotorIndex].ReverseDirection)
+	{
+		Target = -1.0*Target;
+	}
 	CommandEnqueue(MotorIndex, CommandType::MoveAbs, Target, CommandGetSetType::Set);
 }
 
@@ -348,7 +370,14 @@ float SMC100Chained::GetPosition(uint8_t MotorIndex)
 		PrintMotorIndexError();
 		return NAN;
 	}
-	return MotorState[MotorIndex].Position;
+	if (MotorState[MotorIndex].ReverseDirection)
+	{
+		return -1.0*MotorState[MotorIndex].Position;
+	}
+	else
+	{
+		return MotorState[MotorIndex].Position;
+	}
 }
 
 void SMC100Chained::SendGetGPIOInput(uint8_t MotorIndex)
