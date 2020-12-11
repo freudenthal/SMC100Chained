@@ -100,6 +100,7 @@ class SMC100Chained
 			float PositionLimitPositive;
 			float Velocity;
 			float Acceleration;
+			bool ReverseDirection;
 			bool PollStatus;
 			bool PollPosition;
 			bool NeedToPollPosition;
@@ -113,6 +114,8 @@ class SMC100Chained
 		bool IsMoving(uint8_t MotorIndex);
 		bool IsEnabled(uint8_t MotorIndex);
 		void Enable(uint8_t MotorIndex, bool Setting);
+		bool GetReversed(uint8_t MotorIndex);
+		void SetReversed(uint8_t MotorIndex, bool Setting);
 		bool IsBusy();
 		void Home(uint8_t MotorIndex);
 		void MoveAbsolute(uint8_t MotorIndex, float Target);
