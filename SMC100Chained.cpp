@@ -319,6 +319,18 @@ void SMC100Chained::MoveAbsolute(uint8_t MotorIndex, float Target)
 		PrintMotorIndexError();
 		return;
 	}
+	if (Target > MotorState[MotorIndex].SoftLimitPositive)
+	{
+		Target = MotorState[MotorIndex].SoftLimitPositive;
+	}
+	if (Target < MotorState[MotorIndex].SoftLimitNegative)
+	{
+		Target = MotorState[MotorIndex].SoftLimitNegative;
+	}
+	if (MotorState[MotorIndex].ReverseDirection)
+	{
+		Target = -1.0*Target;
+	}
 	if (Target < MotorState[MotorIndex].PositionLimitNegative)
 	{
 		Target = MotorState[MotorIndex].PositionLimitNegative;
@@ -332,18 +344,6 @@ void SMC100Chained::MoveAbsolute(uint8_t MotorIndex, float Target)
 		Serial.print("<SMCERROR>(Position for motor ");
 		Serial.print(MotorIndex);
 		Serial.print(" is over limit.)\n");
-	}
-	if (Target > MotorState[MotorIndex].SoftLimitPositive)
-	{
-		Target = MotorState[MotorIndex].SoftLimitPositive;
-	}
-	if (Target < MotorState[MotorIndex].SoftLimitNegative)
-	{
-		Target = MotorState[MotorIndex].SoftLimitNegative;
-	}
-	if (MotorState[MotorIndex].ReverseDirection)
-	{
-		Target = -1.0*Target;
 	}
 	CommandEnqueue(MotorIndex, CommandType::MoveAbs, Target, CommandGetSetType::Set);
 }
