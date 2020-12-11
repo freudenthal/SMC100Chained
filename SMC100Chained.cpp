@@ -80,8 +80,10 @@ SMC100Chained::SMC100Chained(HardwareSerial *serial, const uint8_t* addresses, c
 		MotorState[Index].GPIOInput = 0;
 		MotorState[Index].GPIOOutput = 0;
 		MotorState[Index].AnalogueReading = 0.0;
-		MotorState[Index].PositionLimitNegative = 0.0;
-		MotorState[Index].PositionLimitPositive = 0.0;
+		MotorState[Index].PositionLimitNegative = -1000.0;
+		MotorState[Index].PositionLimitPositive = 1000.0;
+		MotorState[Index].SoftLimitNegative = -1000.0;
+		MotorState[Index].SoftLimitPositive = 1000.0;
 		MotorState[Index].Velocity = 0.0;
 		MotorState[Index].Acceleration = 0.0;
 		MotorState[Index].PollStatus = false;
@@ -233,6 +235,21 @@ void SMC100Chained::SetReversed(uint8_t MotorIndex, bool Setting)
 	}
 }
 
+void SMC100Chained::SetSoftLimitRange(uint8_t MotorIndex, float NegativeLimit, float PositiveLimit)
+{
+	if (MotorIndex < MotorCount)
+	{
+		if (NegativeLimit > PositiveLimit)
+		{
+			float Temp = PositiveLimit;
+			PositiveLimit = NegativeLimit;
+			NegativeLimit = Temp;
+		}
+		MotorState[MotorIndex].SoftLimitNegative = NegativeLimit;
+		MotorState[MotorIndex].SoftLimitPositive = PositiveLimit;
+	}
+}
+
 bool SMC100Chained::IsBusy()
 {
 	return Busy;
@@ -315,6 +332,14 @@ void SMC100Chained::MoveAbsolute(uint8_t MotorIndex, float Target)
 		Serial.print("<SMCERROR>(Position for motor ");
 		Serial.print(MotorIndex);
 		Serial.print(" is over limit.)\n");
+	}
+	if (Target > MotorState[MotorIndex].SoftLimitPositive)
+	{
+		Target = MotorState[MotorIndex].SoftLimitPositive;
+	}
+	if (Target < MotorState[MotorIndex].SoftLimitNegative)
+	{
+		Target = MotorState[MotorIndex].SoftLimitNegative;
 	}
 	if (MotorState[MotorIndex].ReverseDirection)
 	{

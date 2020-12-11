@@ -98,6 +98,8 @@ class SMC100Chained
 			float AnalogueReading;
 			float PositionLimitNegative;
 			float PositionLimitPositive;
+			float SoftLimitNegative;
+			float SoftLimitPositive;
 			float Velocity;
 			float Acceleration;
 			bool ReverseDirection;
@@ -116,6 +118,7 @@ class SMC100Chained
 		void Enable(uint8_t MotorIndex, bool Setting);
 		bool GetReversed(uint8_t MotorIndex);
 		void SetReversed(uint8_t MotorIndex, bool Setting);
+		void SetSoftLimitRange(uint8_t MotorIndex, float NegativeLimit, float PositiveLimit);
 		bool IsBusy();
 		void Home(uint8_t MotorIndex);
 		void MoveAbsolute(uint8_t MotorIndex, float Target);
