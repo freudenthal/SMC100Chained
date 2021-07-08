@@ -668,12 +668,13 @@ void SMC100Chained::CheckCommandQueue()
 
 void SMC100Chained::CheckForCommandReply()
 {
-	if (SerialPort->available())
+	bool KeepGoing = SerialPort->available() > 0;
+	while (KeepGoing)
 	{
 		char NewChar = SerialPort->read();
 		if (NewChar == CarriageReturnCharacter)
 		{
-
+			KeepGoing = SerialPort->available() > 0;
 		}
 		else if (NewChar == NewLineCharacter)
 		{
@@ -685,6 +686,7 @@ void SMC100Chained::CheckForCommandReply()
 				Serial.print(" )\n");
 			}
 			ParseReply();
+			KeepGoing = false;
 		}
 		else
 		{
@@ -697,6 +699,11 @@ void SMC100Chained::CheckForCommandReply()
 				Serial.print(ReplyBuffer);
 				Serial.print(")\n");
 				ModeTransitionToIdle();
+				KeepGoing = false;
+			}
+			else
+			{
+				KeepGoing = SerialPort->available() > 0;
 			}
 		}
 	}
