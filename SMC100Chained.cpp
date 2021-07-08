@@ -126,6 +126,7 @@ void SMC100Chained::Begin()
 		CommandEnqueue(Index, CommandType::Acceleration, 0.0, CommandGetSetType::Get);
 		CommandEnqueue(Index, CommandType::GPIOInput, 0.0, CommandGetSetType::None);
 	}
+	SerialPort->write(17); //0x11 Xon
 }
 
 void SMC100Chained::UpdateAfterHoming()
