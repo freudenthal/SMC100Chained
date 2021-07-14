@@ -111,12 +111,16 @@ SMC100Chained::SMC100Chained(HardwareSerial *serial, const uint8_t* addresses, c
 	PollPosition = false;
 	PollPositionTimeLast = 0;
 	PollStatusTimeLast = 0;
+	AutomaticallyPoll = true;
 	Mode = ModeType::Inactive;
 }
 
 void SMC100Chained::Begin()
 {
 	Mode = ModeType::Idle;
+	SerialPort->write(17); //0x11 Xon
+	SerialPort->write(CarriageReturnCharacter);
+	SerialPort->write(NewLineCharacter);
 	for (uint8_t Index = 0; Index < MotorCount; ++Index)
 	{
 		CommandEnqueue(Index, CommandType::ErrorStatus, 0.0, CommandGetSetType::Get);
@@ -126,7 +130,6 @@ void SMC100Chained::Begin()
 		CommandEnqueue(Index, CommandType::Acceleration, 0.0, CommandGetSetType::Get);
 		CommandEnqueue(Index, CommandType::GPIOInput, 0.0, CommandGetSetType::None);
 	}
-	SerialPort->write(17); //0x11 Xon
 }
 
 void SMC100Chained::UpdateAfterHoming()
@@ -135,6 +138,11 @@ void SMC100Chained::UpdateAfterHoming()
 	{
 		UpdateMotorParameters(MotorIndex);
 	}
+}
+
+void SMC100Chained::AutomaticPolling(bool EnableAutomaticPolling)
+{
+	AutomaticallyPoll = EnableAutomaticPolling;
 }
 
 void SMC100Chained::UpdateMotorParameters(uint8_t MotorIndex)
@@ -498,7 +506,7 @@ void SMC100Chained::SetVerbose(bool VerboseToSet)
 void SMC100Chained::Check()
 {
 	bool CheckIsIdle = true;
-	if ( (Mode == ModeType::Idle) && CommandQueueEmpty() )
+	if ( (Mode == ModeType::Idle) && CommandQueueEmpty() && AutomaticallyPoll)
 	{
 		if (PollStatus)
 		{
@@ -835,7 +843,11 @@ void SMC100Chained::ParseReply()
 		{
 			CurrentCommandCompleteCallback();
 		}
-		if ( (CurrentCommand->Command != CommandType::ErrorCommands) && (CurrentCommand->Command != CommandType::ErrorStatus) )
+		if (
+			(CurrentCommand->Command != CommandType::ErrorCommands) &&
+			(CurrentCommand->Command != CommandType::ErrorStatus) &&
+			(CurrentCommand->Command != CommandType::PositionReal) &&
+			AutomaticallyPoll )
 		{
 			SendErrorCommands(CurrentCommandMotorIndex);
 		}
@@ -1080,7 +1092,7 @@ void SMC100Chained::CheckAllPollStatus()
 			AllMotorsPolled = false;
 		}
 	}
-	if (AllMotorsPolled)
+	if (AllMotorsPolled && AutomaticallyPoll)
 	{
 		PollStatus = false;
 		for (uint8_t Index = 0; Index < MotorCount; ++Index)
@@ -1199,12 +1211,16 @@ void SMC100Chained::UpdateStateOnSending()
 			NeedToFireMoveComplete = true;
 			MotorState[CurrentCommandMotorIndex].NeedToPollPosition = true;
 			MotorState[CurrentCommandMotorIndex].Status = StatusType::Moving;
-			PrepareErrorStatusPolling(CurrentCommandMotorIndex);
+			if (AutomaticallyPoll)
+			{
+				PrepareErrorStatusPolling(CurrentCommandMotorIndex);
+			}
 		}
 	}
 	if ( (CurrentCommand->Command == CommandType::Home) )
 	{
 		NeedToFireHomeComplete = true;
+		AutomaticallyPoll = true;
 		MotorState[CurrentCommandMotorIndex].NeedToPollPosition = true;
 		PrepareErrorStatusPolling(CurrentCommandMotorIndex);
 	}
@@ -1235,7 +1251,11 @@ void SMC100Chained::UpdateStateOnSending()
 	{
 		ModeTransitionToWaitForReply();
 	}
-	else if ( (CurrentCommand->Command != CommandType::ErrorCommands) && (CurrentCommand->Command != CommandType::ErrorStatus) )
+	else if (
+		(CurrentCommand->Command != CommandType::ErrorCommands) &&
+		(CurrentCommand->Command != CommandType::ErrorStatus) &&
+		(CurrentCommand->Command != CommandType::PositionReal) &&
+		AutomaticallyPoll)
 	{
 		SendErrorCommands(CurrentCommandMotorIndex);
 	}

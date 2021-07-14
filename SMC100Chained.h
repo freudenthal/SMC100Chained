@@ -111,6 +111,7 @@ class SMC100Chained
 		SMC100Chained(HardwareSerial* serial, const uint8_t* addresses, const uint8_t addresscount);
 		void Check();
 		void Begin();
+		void AutomaticPolling(bool EnableAutomaticPolling);
 		bool IsHomed(uint8_t MotorIndex);
 		bool IsReady(uint8_t MotorIndex);
 		bool IsMoving(uint8_t MotorIndex);
@@ -216,6 +217,7 @@ class SMC100Chained
 		bool NeedToFireHomeComplete;
 		bool PollStatus;
 		bool PollPosition;
+		bool AutomaticallyPoll;
 		const CommandStruct* CurrentCommand;
 		CommandGetSetType CurrentCommandGetOrSet;
 		float CurrentCommandParameter;
