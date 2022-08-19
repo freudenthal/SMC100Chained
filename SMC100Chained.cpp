@@ -187,6 +187,8 @@ void SMC100Chained::ClearMotorSettings()
 
 void SMC100Chained::GetMotorSettings(uint8_t MotorIndex)
 {
+	ClearMotorSettings();
+	CurrentSettings.MotorIndex = MotorIndex;
 	CommandEnqueue(MotorIndex, CommandType::Backlash, 0.0, CommandGetSetType::Get);
 	CommandEnqueue(MotorIndex, CommandType::Hysteresis, 0.0, CommandGetSetType::Get);
 	CommandEnqueue(MotorIndex, CommandType::FilterKd, 0.0, CommandGetSetType::Get);
