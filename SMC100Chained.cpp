@@ -29,6 +29,18 @@ const SMC100Chained::CommandStruct SMC100Chained::CommandLibrary[] =
 	{CommandType::PositionReal,"TP",CommandParameterType::None,CommandGetSetType::GetAlways},
 	{CommandType::Velocity,"VA",CommandParameterType::Float,CommandGetSetType::GetSet},
 	{CommandType::Acceleration,"AC",CommandParameterType::Float,CommandGetSetType::GetSet},
+	{CommandType::Backlash,"BA",CommandParameterType::Float,CommandGetSetType::GetSet},
+	{CommandType::Hysteresis,"BH",CommandParameterType::Float,CommandGetSetType::GetSet},
+	{CommandType::FilterKd,"FD",CommandParameterType::Float,CommandGetSetType::GetSet},
+	{CommandType::ErrorLimit,"FE",CommandParameterType::Float,CommandGetSetType::GetSet},
+	{CommandType::FrictionCompensation,"FF",CommandParameterType::Float,CommandGetSetType::GetSet},
+	{CommandType::JerkTime,"JR",CommandParameterType::Float,CommandGetSetType::GetSet},
+	{CommandType::Kd,"KD",CommandParameterType::Float,CommandGetSetType::GetSet},
+	{CommandType::Ki,"KI",CommandParameterType::Float,CommandGetSetType::GetSet},
+	{CommandType::Kp,"KP",CommandParameterType::Float,CommandGetSetType::GetSet},
+	{CommandType::Kv,"KV",CommandParameterType::Float,CommandGetSetType::GetSet},
+	{CommandType::HomeVelocity,"OH",CommandParameterType::Float,CommandGetSetType::GetSet},
+	{CommandType::HomeTime,"OT",CommandParameterType::Float,CommandGetSetType::GetSet},
 	{CommandType::KeypadEnable,"JM",CommandParameterType::Int,CommandGetSetType::GetSet},
 	{CommandType::ErrorCommands,"TE",CommandParameterType::None,CommandGetSetType::GetAlways},
 	{CommandType::ErrorStatus,"TS",CommandParameterType::None,CommandGetSetType::GetAlways}
@@ -152,6 +164,42 @@ void SMC100Chained::UpdateMotorParameters(uint8_t MotorIndex)
 	CommandEnqueue(MotorIndex, CommandType::Velocity, 0.0, CommandGetSetType::Get);
 	CommandEnqueue(MotorIndex, CommandType::Acceleration, 0.0, CommandGetSetType::Get);
 	CommandEnqueue(MotorIndex, CommandType::GPIOInput, 0.0, CommandGetSetType::None);
+}
+
+void SMC100Chained::ClearMotorSettings()
+{
+	CurrentSettings.MotorIndex = -1;
+	CurrentSettings.Complete = false;
+	CurrentSettings.Backlash = NAN;
+	CurrentSettings.Hysteresis = NAN;
+	CurrentSettings.FilterKd = NAN;
+	CurrentSettings.ErrorLimit = NAN;
+	CurrentSettings.FrictionCompensation = NAN;
+	CurrentSettings.JerkTime = NAN;
+	CurrentSettings.Kd = NAN;
+	CurrentSettings.Ki = NAN;
+	CurrentSettings.Kp = NAN;
+	CurrentSettings.Kv = NAN;
+	CurrentSettings.HomeVelocity = NAN;
+	CurrentSettings.HomeTime = NAN;
+	CurrentSettings.CurrentLimit = NAN;
+}
+
+void SMC100Chained::GetMotorSettings(uint8_t MotorIndex)
+{
+	CommandEnqueue(MotorIndex, CommandType::Backlash, 0.0, CommandGetSetType::Get);
+	CommandEnqueue(MotorIndex, CommandType::Hysteresis, 0.0, CommandGetSetType::Get);
+	CommandEnqueue(MotorIndex, CommandType::FilterKd, 0.0, CommandGetSetType::Get);
+	CommandEnqueue(MotorIndex, CommandType::ErrorLimit, 0.0, CommandGetSetType::Get);
+	CommandEnqueue(MotorIndex, CommandType::FrictionCompensation, 0.0, CommandGetSetType::Get);
+	CommandEnqueue(MotorIndex, CommandType::JerkTime, 0.0, CommandGetSetType::Get);
+	CommandEnqueue(MotorIndex, CommandType::Kd, 0.0, CommandGetSetType::Get);
+	CommandEnqueue(MotorIndex, CommandType::Ki, 0.0, CommandGetSetType::Get);
+	CommandEnqueue(MotorIndex, CommandType::Kp, 0.0, CommandGetSetType::Get);
+	CommandEnqueue(MotorIndex, CommandType::Kv, 0.0, CommandGetSetType::Get);
+	CommandEnqueue(MotorIndex, CommandType::HomeVelocity, 0.0, CommandGetSetType::Get);
+	CommandEnqueue(MotorIndex, CommandType::HomeTime, 0.0, CommandGetSetType::Get);
+	CommandEnqueue(MotorIndex, CommandType::CurrentLimit, 0.0, CommandGetSetType::Get);
 }
 
 bool SMC100Chained::IsHomed(uint8_t MotorIndex)
@@ -839,6 +887,14 @@ void SMC100Chained::ParseReply()
 				UpdateAcceleration(AddressOfReply, Acceleration);
 			}
 		}
+		else if ( IsMotorSetting(CurrentCommand->Command) )
+		{
+			if (CurrentCommandGetOrSet == CommandGetSetType::Get)
+			{
+				float SettingValue = atof(ParameterAddress);
+				UpdateMotorSetting(AddressOfReply, CurrentCommand->Command, SettingValue);
+			}
+		}
 		if (CurrentCommandCompleteCallback != NULL)
 		{
 			CurrentCommandCompleteCallback();
@@ -855,6 +911,188 @@ void SMC100Chained::ParseReply()
 		{
 			ModeTransitionToIdle();
 		}
+	}
+}
+
+void SMC100Chained::UpdateMotorSetting(uint8_t MotorIndex, CommandType SettingType, float SettingValue)
+{
+	if (CurrentSettings.MotorIndex == -1)
+	{
+		CurrentSettings.MotorIndex = MotorIndex;
+	}
+	if (CurrentSettings.MotorIndex == MotorIndex)
+	{
+		switch(SettingType)
+		{
+			case CommandType::Backlash :
+				CurrentSettings.Backlash = SettingValue;
+				break;
+			case CommandType::Hysteresis :
+				CurrentSettings.Hysteresis = SettingValue;
+				break;
+			case CommandType::FilterKd :
+				CurrentSettings.FilterKd = SettingValue;
+				break;
+			case CommandType::ErrorLimit :
+				CurrentSettings.ErrorLimit = SettingValue;
+				break;
+			case CommandType::FrictionCompensation :
+				CurrentSettings.FrictionCompensation = SettingValue;
+				break;
+			case CommandType::JerkTime :
+				CurrentSettings.JerkTime = SettingValue;
+				break;
+			case CommandType::Kd :
+				CurrentSettings.Kd = SettingValue;
+				break;
+			case CommandType::Ki :
+				CurrentSettings.Ki = SettingValue;
+				break;
+			case CommandType::Kp :
+				CurrentSettings.Kp = SettingValue;
+				break;
+			case CommandType::Kv :
+				CurrentSettings.Kv = SettingValue;
+				break;
+			case CommandType::HomeVelocity :
+				CurrentSettings.HomeVelocity = SettingValue;
+				break;
+			case CommandType::HomeTime :
+				CurrentSettings.HomeTime = SettingValue;
+				break;
+			case CommandType::CurrentLimit :
+				CurrentSettings.CurrentLimit = SettingValue;
+				break;
+			default:
+				break;
+		}
+		bool NowComplete = CheckSettingsComplete();
+		if (!CurrentSettings.Complete && NowComplete)
+		{
+			PrintSettings();
+		}
+		CurrentSettings.Complete = NowComplete;
+	}
+	else
+	{
+		Serial.print("<SMC100Chained>(Error motor setting index of ");
+		Serial.print(MotorIndex);
+		Serial.print(" seen when settting ");
+		Serial.print(CurrentSettings.MotorIndex);
+		Serial.print(")\n");
+	}
+}
+
+void SMC100Chained::PrintMotorSettings()
+{
+	Serial.print("[SMCSET](");
+	Serial.print(CurrentSettings.MotorIndex);
+	Serial.print(",Backlash,");
+	Serial.print(CurrentSettings.Backlash);
+	Serial.print(",Hysteresis,");
+	Serial.print(CurrentSettings.Hysteresis);
+	Serial.print(",FilterKd,");
+	Serial.print(CurrentSettings.FilterKd);
+	Serial.print(",ErrorLimit,");
+	Serial.print(CurrentSettings.ErrorLimit);
+	Serial.print(",FrictionCompensation,");
+	Serial.print(CurrentSettings.FrictionCompensation);
+	Serial.print(",JerkTime,");
+	Serial.print(CurrentSettings.JerkTime);
+	Serial.print(",Kd,");
+	Serial.print(CurrentSettings.Kd);
+	Serial.print(",Ki,");
+	Serial.print(CurrentSettings.Ki);
+	Serial.print(",Kp,");
+	Serial.print(CurrentSettings.Kp);
+	Serial.print(",Kv,");
+	Serial.print(CurrentSettings.Kv);
+	Serial.print(",HomeVelocity,");
+	Serial.print(CurrentSettings.HomeVelocity);
+	Serial.print(",HomeTime,");
+	Serial.print(CurrentSettings.HomeTime);
+	Serial.print(",CurrentLimit,");
+	Serial.print(CurrentSettings.CurrentLimit);
+	Serial.print(")\n");
+}
+
+bool SMC100Chained::CheckSettingsComplete()
+{
+	if (isnan(CurrentSettings.Backlash))
+	{
+		return false;
+	}
+	if (isnan(CurrentSettings.Hysteresis))
+	{
+		return false;
+	}
+	if (isnan(CurrentSettings.FilterKd))
+	{
+		return false;
+	}
+	if (isnan(CurrentSettings.ErrorLimit))
+	{
+		return false;
+	}
+	if (isnan(CurrentSettings.FrictionCompensation))
+	{
+		return false;
+	}
+	if (isnan(CurrentSettings.JerkTime))
+	{
+		return false;
+	}
+	if (isnan(CurrentSettings.Kd))
+	{
+		return false;
+	}
+	if (isnan(CurrentSettings.Ki))
+	{
+		return false;
+	}
+	if (isnan(CurrentSettings.Kp))
+	{
+		return false;
+	}
+	if (isnan(CurrentSettings.Kv))
+	{
+		return false;
+	}
+	if (isnan(CurrentSettings.HomeVelocity))
+	{
+		return false;
+	}
+	if (isnan(CurrentSettings.HomeTime))
+	{
+		return false;
+	}
+	if (isnan(CurrentSettings.CurrentLimit))
+	{
+		return false;
+	}
+	return true;
+}
+
+bool SMC100Chained::IsMotorSetting(CommandType TypeToCheck)
+{
+	switch(TypeToCheck)
+	{
+		case CommandType::Backlash :
+		case CommandType::Hysteresis :
+		case CommandType::FilterKd :
+		case CommandType::ErrorLimit :
+		case CommandType::FrictionCompensation :
+		case CommandType::JerkTime :
+		case CommandType::Kd :
+		case CommandType::Ki :
+		case CommandType::Kp :
+		case CommandType::Kv :
+		case CommandType::HomeVelocity :
+		case CommandType::HomeTime :
+		case CommandType::CurrentLimit :
+			return true;
+		default:
+			return false;
 	}
 }
 

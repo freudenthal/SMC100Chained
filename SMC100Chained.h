@@ -30,6 +30,19 @@ class SMC100Chained
 			PositionReal,
 			Velocity,
 			Acceleration,
+			Backlash,
+			Hysteresis,
+			FilterKd,
+			ErrorLimit,
+			FrictionCompensation,
+			JerkTime,
+			Kd,
+			Ki,
+			Kp,
+			Kv,
+			HomeVelocity,
+			HomeTime,
+			CurrentLimit,
 			KeypadEnable,
 			ErrorCommands,
 			ErrorStatus,
@@ -87,6 +100,24 @@ class SMC100Chained
 			const char* Code;
 			StatusType Type;
 		};
+		struct MotorSettings
+		{
+			int MotorIndex;
+			bool Complete;
+			float Backlash;
+			float Hysteresis;
+			float FilterKd;
+			float ErrorLimit;
+			float FrictionCompensation;
+			float JerkTime;
+			float Kd;
+			float Ki;
+			float Kp;
+			float Kv;
+			float HomeVelocity;
+			float HomeTime;
+			float CurrentLimit;
+		}
 		struct MotorStatus
 		{
 			uint8_t Address;
@@ -203,6 +234,7 @@ class SMC100Chained
 		static const uint32_t WaitAfterSendingTimeMax;
 		static const char NoErrorCharacter;
 		MotorStatus MotorState[SMC100ChainedMaxMotors];
+		MotorSettings CurrentSettings;
 		uint8_t MotorCount;
 		bool Busy;
 		bool Verbose;
