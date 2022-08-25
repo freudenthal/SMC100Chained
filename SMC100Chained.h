@@ -79,6 +79,7 @@ class SMC100Chained
 			Inactive,
 			Idle,
 			WaitForCommandReply,
+			WaitOnSentCommand,
 		};
 		struct CommandStruct
 		{
@@ -86,6 +87,7 @@ class SMC100Chained
 			const char* CommandChar;
 			CommandParameterType SendType;
 			CommandGetSetType GetSetType;
+			uint8_t SentDelay;
 		};
 		struct CommandQueueEntry
 		{
@@ -260,6 +262,8 @@ class SMC100Chained
 		uint8_t ReplyBufferIndex;
 		uint32_t PollStatusTimeLast;
 		uint32_t PollPositionTimeLast;
+		uint32_t SentDelay;
+		uint32_t SentTime;
 		char ReplyBuffer[SMC100ChainedReplyBufferSize];
 		CommandQueueEntry CommandQueue[SMC100ChainedQueueCount];
 		uint8_t CommandQueueHead;

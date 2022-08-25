@@ -12,38 +12,38 @@ const uint32_t SMC100Chained::PollPositionTimeInterval = 100000;
 
 const SMC100Chained::CommandStruct SMC100Chained::CommandLibrary[] =
 {
-	{CommandType::None,"  ",CommandParameterType::None,CommandGetSetType::None},
-	{CommandType::Enable,"MM",CommandParameterType::Int,CommandGetSetType::GetSet},
-	{CommandType::Home,"OR",CommandParameterType::None,CommandGetSetType::None},
-	{CommandType::MoveAbs,"PA",CommandParameterType::Float,CommandGetSetType::GetSet},
-	{CommandType::MoveRel,"PR",CommandParameterType::Float,CommandGetSetType::GetSet},
-	{CommandType::MoveEstimate,"PT",CommandParameterType::Float,CommandGetSetType::GetAlways},
-	{CommandType::Configure,"PW",CommandParameterType::Int,CommandGetSetType::GetSet},
-	{CommandType::Analogue,"RA",CommandParameterType::None,CommandGetSetType::GetAlways},
-	{CommandType::GPIOInput,"RB",CommandParameterType::None,CommandGetSetType::GetAlways},
-	{CommandType::Reset,"RS",CommandParameterType::None,CommandGetSetType::None},
-	{CommandType::GPIOOutput,"SB",CommandParameterType::Int,CommandGetSetType::GetSet},
-	{CommandType::LimitPositive,"SR",CommandParameterType::Float,CommandGetSetType::GetSet},
-	{CommandType::LimitNegative,"SL",CommandParameterType::Float,CommandGetSetType::GetSet},
-	{CommandType::PositionAsSet,"TH",CommandParameterType::None,CommandGetSetType::GetAlways},
-	{CommandType::PositionReal,"TP",CommandParameterType::None,CommandGetSetType::GetAlways},
-	{CommandType::Velocity,"VA",CommandParameterType::Float,CommandGetSetType::GetSet},
-	{CommandType::Acceleration,"AC",CommandParameterType::Float,CommandGetSetType::GetSet},
-	{CommandType::Backlash,"BA",CommandParameterType::Float,CommandGetSetType::GetSet},
-	{CommandType::Hysteresis,"BH",CommandParameterType::Float,CommandGetSetType::GetSet},
-	{CommandType::FilterKd,"FD",CommandParameterType::Float,CommandGetSetType::GetSet},
-	{CommandType::ErrorLimit,"FE",CommandParameterType::Float,CommandGetSetType::GetSet},
-	{CommandType::FrictionCompensation,"FF",CommandParameterType::Float,CommandGetSetType::GetSet},
-	{CommandType::JerkTime,"JR",CommandParameterType::Float,CommandGetSetType::GetSet},
-	{CommandType::Kd,"KD",CommandParameterType::Float,CommandGetSetType::GetSet},
-	{CommandType::Ki,"KI",CommandParameterType::Float,CommandGetSetType::GetSet},
-	{CommandType::Kp,"KP",CommandParameterType::Float,CommandGetSetType::GetSet},
-	{CommandType::Kv,"KV",CommandParameterType::Float,CommandGetSetType::GetSet},
-	{CommandType::HomeVelocity,"OH",CommandParameterType::Float,CommandGetSetType::GetSet},
-	{CommandType::HomeTime,"OT",CommandParameterType::Float,CommandGetSetType::GetSet},
-	{CommandType::KeypadEnable,"JM",CommandParameterType::Int,CommandGetSetType::GetSet},
-	{CommandType::ErrorCommands,"TE",CommandParameterType::None,CommandGetSetType::GetAlways},
-	{CommandType::ErrorStatus,"TS",CommandParameterType::None,CommandGetSetType::GetAlways}
+	{CommandType::None,"  ",CommandParameterType::None,CommandGetSetType::None,0},
+	{CommandType::Enable,"MM",CommandParameterType::Int,CommandGetSetType::GetSet,0},
+	{CommandType::Home,"OR",CommandParameterType::None,CommandGetSetType::None,0},
+	{CommandType::MoveAbs,"PA",CommandParameterType::Float,CommandGetSetType::GetSet,0},
+	{CommandType::MoveRel,"PR",CommandParameterType::Float,CommandGetSetType::GetSet,0},
+	{CommandType::MoveEstimate,"PT",CommandParameterType::Float,CommandGetSetType::GetAlways,0},
+	{CommandType::Configure,"PW",CommandParameterType::Int,CommandGetSetType::GetSet,10000},
+	{CommandType::Analogue,"RA",CommandParameterType::None,CommandGetSetType::GetAlways,0},
+	{CommandType::GPIOInput,"RB",CommandParameterType::None,CommandGetSetType::GetAlways,0},
+	{CommandType::Reset,"RS",CommandParameterType::None,CommandGetSetType::None,5000},
+	{CommandType::GPIOOutput,"SB",CommandParameterType::Int,CommandGetSetType::GetSet,0},
+	{CommandType::LimitPositive,"SR",CommandParameterType::Float,CommandGetSetType::GetSet,0},
+	{CommandType::LimitNegative,"SL",CommandParameterType::Float,CommandGetSetType::GetSet,0},
+	{CommandType::PositionAsSet,"TH",CommandParameterType::None,CommandGetSetType::GetAlways,0},
+	{CommandType::PositionReal,"TP",CommandParameterType::None,CommandGetSetType::GetAlways,0},
+	{CommandType::Velocity,"VA",CommandParameterType::Float,CommandGetSetType::GetSet,0},
+	{CommandType::Acceleration,"AC",CommandParameterType::Float,CommandGetSetType::GetSet,0},
+	{CommandType::Backlash,"BA",CommandParameterType::Float,CommandGetSetType::GetSet,0},
+	{CommandType::Hysteresis,"BH",CommandParameterType::Float,CommandGetSetType::GetSet,0},
+	{CommandType::FilterKd,"FD",CommandParameterType::Float,CommandGetSetType::GetSet,0},
+	{CommandType::ErrorLimit,"FE",CommandParameterType::Float,CommandGetSetType::GetSet,0},
+	{CommandType::FrictionCompensation,"FF",CommandParameterType::Float,CommandGetSetType::GetSet,0},
+	{CommandType::JerkTime,"JR",CommandParameterType::Float,CommandGetSetType::GetSet,0},
+	{CommandType::Kd,"KD",CommandParameterType::Float,CommandGetSetType::GetSet,0},
+	{CommandType::Ki,"KI",CommandParameterType::Float,CommandGetSetType::GetSet,0},
+	{CommandType::Kp,"KP",CommandParameterType::Float,CommandGetSetType::GetSet,0},
+	{CommandType::Kv,"KV",CommandParameterType::Float,CommandGetSetType::GetSet,0},
+	{CommandType::HomeVelocity,"OH",CommandParameterType::Float,CommandGetSetType::GetSet,0},
+	{CommandType::HomeTime,"OT",CommandParameterType::Float,CommandGetSetType::GetSet,0},
+	{CommandType::KeypadEnable,"JM",CommandParameterType::Int,CommandGetSetType::GetSet,0},
+	{CommandType::ErrorCommands,"TE",CommandParameterType::None,CommandGetSetType::GetAlways,0},
+	{CommandType::ErrorStatus,"TS",CommandParameterType::None,CommandGetSetType::GetAlway,0s}
 };
 
 const SMC100Chained::StatusCharSet SMC100Chained::StatusLibrary[] =
@@ -185,7 +185,7 @@ void SMC100Chained::ClearMotorSettings()
 	CurrentSettings.CurrentLimit = NAN;
 }
 
-void SMC100Chained::GetMotorSettings(uint8_t MotorIndex)
+void SMC100Chained::SendGetMotorSettings(uint8_t MotorIndex)
 {
 	ClearMotorSettings();
 	CurrentSettings.MotorIndex = MotorIndex;
@@ -202,6 +202,30 @@ void SMC100Chained::GetMotorSettings(uint8_t MotorIndex)
 	CommandEnqueue(MotorIndex, CommandType::HomeVelocity, 0.0, CommandGetSetType::Get);
 	CommandEnqueue(MotorIndex, CommandType::HomeTime, 0.0, CommandGetSetType::Get);
 	CommandEnqueue(MotorIndex, CommandType::CurrentLimit, 0.0, CommandGetSetType::Get);
+}
+
+SMC100Chained::MotorSettings SMC100Chained::GetMotorSettings()
+{
+	return CurrentSettings;
+}
+
+void SMC100Chained::UpdateMotorSetting(MotorSettings NewSettings)
+{
+	CommandEnqueue(MotorIndex, CommandType::Configure, 1.0, CommandGetSetType::Set);
+	CommandEnqueue(MotorIndex, CommandType::Backlash, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(MotorIndex, CommandType::Hysteresis, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(MotorIndex, CommandType::FilterKd, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(MotorIndex, CommandType::ErrorLimit, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(MotorIndex, CommandType::FrictionCompensation, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(MotorIndex, CommandType::JerkTime, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(MotorIndex, CommandType::Kd, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(MotorIndex, CommandType::Ki, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(MotorIndex, CommandType::Kp, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(MotorIndex, CommandType::Kv, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(MotorIndex, CommandType::HomeVelocity, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(MotorIndex, CommandType::HomeTime, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(MotorIndex, CommandType::CurrentLimit, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(MotorIndex, CommandType::Configure, 0.0, CommandGetSetType::Set);
 }
 
 bool SMC100Chained::IsHomed(uint8_t MotorIndex)
@@ -577,6 +601,14 @@ void SMC100Chained::Check()
 		case ModeType::WaitForCommandReply:
 			CheckForCommandReply();
 			break;
+		case ModeType::WaitOnSentCommand:
+			if ( (millis() - SentTime) > SentDelay)
+			{
+				SentTime = 0;
+				SentDelay = 0;
+				ModeTransitionToIdle();
+			}
+			break;
 		default:
 			break;
 	}
@@ -683,6 +715,11 @@ void SMC100Chained::CheckPositionPoll()
 		PollPositionRealNeededMotors();
 		PollStatusTimeLast = micros();
 	}
+}
+
+void SMC100Chained:ModeTransitionToWaitOnSentCommand()
+{
+	Mode = ModeType::WaitOnSentCommand;
 }
 
 void SMC100Chained::ModeTransitionToIdle()
@@ -1486,6 +1523,16 @@ void SMC100Chained::UpdateStateOnSending()
 	if ( (CurrentCommandCompleteCallback != NULL) && (CurrentCommandGetOrSet == CommandGetSetType::Set) )
 	{
 		CurrentCommandCompleteCallback();
+	}
+	if ((CurrentCommand->SentDelay != 0) && (CurrentCommandGetOrSet != CommandGetSetType::Get) && ((int)CurrentCommandParameter == 0))
+	{
+		SentDelay = CurrentCommand->SentDelay;
+		SentTime = millis();
+		ModeTransitionToWaitOnSentCommand();
+		if (Verbose)
+		{
+			Serial.println("<SMC100CHAINED>(Waiting on configure commit to memory.)");
+		}
 	}
 	if ( (CurrentCommandGetOrSet == CommandGetSetType::Get) || (CurrentCommand->GetSetType == CommandGetSetType::GetAlways) )
 	{
