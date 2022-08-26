@@ -43,7 +43,7 @@ const SMC100Chained::CommandStruct SMC100Chained::CommandLibrary[] =
 	{CommandType::HomeTime,"OT",CommandParameterType::Float,CommandGetSetType::GetSet,0},
 	{CommandType::KeypadEnable,"JM",CommandParameterType::Int,CommandGetSetType::GetSet,0},
 	{CommandType::ErrorCommands,"TE",CommandParameterType::None,CommandGetSetType::GetAlways,0},
-	{CommandType::ErrorStatus,"TS",CommandParameterType::None,CommandGetSetType::GetAlway,0s}
+	{CommandType::ErrorStatus,"TS",CommandParameterType::None,CommandGetSetType::GetAlways,0},
 };
 
 const SMC100Chained::StatusCharSet SMC100Chained::StatusLibrary[] =
@@ -211,21 +211,21 @@ SMC100Chained::MotorSettings SMC100Chained::GetMotorSettings()
 
 void SMC100Chained::UpdateMotorSetting(MotorSettings NewSettings)
 {
-	CommandEnqueue(MotorIndex, CommandType::Configure, 1.0, CommandGetSetType::Set);
-	CommandEnqueue(MotorIndex, CommandType::Backlash, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(MotorIndex, CommandType::Hysteresis, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(MotorIndex, CommandType::FilterKd, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(MotorIndex, CommandType::ErrorLimit, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(MotorIndex, CommandType::FrictionCompensation, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(MotorIndex, CommandType::JerkTime, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(MotorIndex, CommandType::Kd, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(MotorIndex, CommandType::Ki, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(MotorIndex, CommandType::Kp, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(MotorIndex, CommandType::Kv, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(MotorIndex, CommandType::HomeVelocity, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(MotorIndex, CommandType::HomeTime, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(MotorIndex, CommandType::CurrentLimit, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(MotorIndex, CommandType::Configure, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::Configure, 1.0, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::Backlash, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::Hysteresis, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::FilterKd, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::ErrorLimit, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::FrictionCompensation, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::JerkTime, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::Kd, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::Ki, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::Kp, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::Kv, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::HomeVelocity, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::HomeTime, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::CurrentLimit, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::Configure, 0.0, CommandGetSetType::Set);
 }
 
 bool SMC100Chained::IsHomed(uint8_t MotorIndex)
@@ -717,7 +717,7 @@ void SMC100Chained::CheckPositionPoll()
 	}
 }
 
-void SMC100Chained:ModeTransitionToWaitOnSentCommand()
+void SMC100Chained::ModeTransitionToWaitOnSentCommand()
 {
 	Mode = ModeType::WaitOnSentCommand;
 }
@@ -1008,7 +1008,7 @@ void SMC100Chained::UpdateMotorSetting(uint8_t MotorIndex, CommandType SettingTy
 		bool NowComplete = CheckSettingsComplete();
 		if (!CurrentSettings.Complete && NowComplete)
 		{
-			PrintSettings();
+			PrintMotorSettings();
 		}
 		CurrentSettings.Complete = NowComplete;
 	}

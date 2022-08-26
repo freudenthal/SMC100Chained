@@ -87,7 +87,7 @@ class SMC100Chained
 			const char* CommandChar;
 			CommandParameterType SendType;
 			CommandGetSetType GetSetType;
-			uint8_t SentDelay;
+			uint32_t SentDelay;
 		};
 		struct CommandQueueEntry
 		{
@@ -119,7 +119,7 @@ class SMC100Chained
 			float HomeVelocity;
 			float HomeTime;
 			float CurrentLimit;
-		}
+		};
 		struct MotorStatus
 		{
 			uint8_t Address;
@@ -176,6 +176,9 @@ class SMC100Chained
 		void SendGetErrorStatus(uint8_t MotorIndex, FinishedListener Callback = NULL);
 		void SendGetPosition(uint8_t MotorIndex, FinishedListener Callback = NULL);
 		void UpdateMotorParameters(uint8_t MotorIndex);
+		void SendGetMotorSettings(uint8_t MotorIndex);
+		MotorSettings GetMotorSettings();
+		void UpdateMotorSetting(MotorSettings NewSettings);
 	private:
 		void PrintMotorIndexError();
 		void CheckCommandQueue();
@@ -209,6 +212,7 @@ class SMC100Chained
 		void PollPositionRealNeededMotors();
 		void ModeTransitionToIdle();
 		void ModeTransitionToWaitForReply();
+		void ModeTransitionToWaitOnSentCommand();
 		void UpdatePosition(uint8_t MotorIndex, float Position);
 		void UpdateGPIOInput(uint8_t MotorAddress, uint8_t GPIOInputToSet);
 		void UpdatePositionLimitPositive(uint8_t MotorAddress, float PositionLimitPositiveToSet);
@@ -223,6 +227,11 @@ class SMC100Chained
 		void CheckAllPollStatus();
 		void SendErrorCommands(uint8_t MotorIndex);
 		void UpdateCommandErrors(uint8_t MotorIndex, char ErrorCode);
+		void ClearMotorSettings();
+		bool IsMotorSetting(CommandType TypeToCheck);
+		void PrintMotorSettings();
+		bool CheckSettingsComplete();
+		void UpdateMotorSetting(uint8_t MotorIndex, CommandType SettingType, float SettingValue);
 		const char* ConvertToErrorString(char ErrorCode);
 		static const uint32_t PollStatusTimeInterval;
 		static const uint32_t PollPositionTimeInterval;
