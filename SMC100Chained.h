@@ -42,7 +42,6 @@ class SMC100Chained
 			Kv,
 			HomeVelocity,
 			HomeTime,
-			CurrentLimit,
 			KeypadEnable,
 			ErrorCommands,
 			ErrorStatus,
@@ -105,6 +104,7 @@ class SMC100Chained
 		struct MotorSettings
 		{
 			int MotorIndex;
+			uint8_t Address;
 			bool Complete;
 			float Backlash;
 			float Hysteresis;
@@ -118,7 +118,6 @@ class SMC100Chained
 			float Kv;
 			float HomeVelocity;
 			float HomeTime;
-			float CurrentLimit;
 		};
 		struct MotorStatus
 		{

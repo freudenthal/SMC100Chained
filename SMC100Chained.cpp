@@ -169,6 +169,7 @@ void SMC100Chained::UpdateMotorParameters(uint8_t MotorIndex)
 void SMC100Chained::ClearMotorSettings()
 {
 	CurrentSettings.MotorIndex = -1;
+	CurrentSettings.Address = -1;
 	CurrentSettings.Complete = false;
 	CurrentSettings.Backlash = NAN;
 	CurrentSettings.Hysteresis = NAN;
@@ -182,13 +183,13 @@ void SMC100Chained::ClearMotorSettings()
 	CurrentSettings.Kv = NAN;
 	CurrentSettings.HomeVelocity = NAN;
 	CurrentSettings.HomeTime = NAN;
-	CurrentSettings.CurrentLimit = NAN;
 }
 
 void SMC100Chained::SendGetMotorSettings(uint8_t MotorIndex)
 {
 	ClearMotorSettings();
 	CurrentSettings.MotorIndex = MotorIndex;
+	CurrentSettings.Address = MotorState[MotorIndex].Address;
 	CommandEnqueue(MotorIndex, CommandType::Backlash, 0.0, CommandGetSetType::Get);
 	CommandEnqueue(MotorIndex, CommandType::Hysteresis, 0.0, CommandGetSetType::Get);
 	CommandEnqueue(MotorIndex, CommandType::FilterKd, 0.0, CommandGetSetType::Get);
@@ -201,7 +202,6 @@ void SMC100Chained::SendGetMotorSettings(uint8_t MotorIndex)
 	CommandEnqueue(MotorIndex, CommandType::Kv, 0.0, CommandGetSetType::Get);
 	CommandEnqueue(MotorIndex, CommandType::HomeVelocity, 0.0, CommandGetSetType::Get);
 	CommandEnqueue(MotorIndex, CommandType::HomeTime, 0.0, CommandGetSetType::Get);
-	CommandEnqueue(MotorIndex, CommandType::CurrentLimit, 0.0, CommandGetSetType::Get);
 }
 
 SMC100Chained::MotorSettings SMC100Chained::GetMotorSettings()
@@ -212,19 +212,18 @@ SMC100Chained::MotorSettings SMC100Chained::GetMotorSettings()
 void SMC100Chained::UpdateMotorSetting(MotorSettings NewSettings)
 {
 	CommandEnqueue(NewSettings.MotorIndex, CommandType::Configure, 1.0, CommandGetSetType::Set);
-	CommandEnqueue(NewSettings.MotorIndex, CommandType::Backlash, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(NewSettings.MotorIndex, CommandType::Hysteresis, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(NewSettings.MotorIndex, CommandType::FilterKd, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(NewSettings.MotorIndex, CommandType::ErrorLimit, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(NewSettings.MotorIndex, CommandType::FrictionCompensation, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(NewSettings.MotorIndex, CommandType::JerkTime, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(NewSettings.MotorIndex, CommandType::Kd, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(NewSettings.MotorIndex, CommandType::Ki, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(NewSettings.MotorIndex, CommandType::Kp, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(NewSettings.MotorIndex, CommandType::Kv, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(NewSettings.MotorIndex, CommandType::HomeVelocity, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(NewSettings.MotorIndex, CommandType::HomeTime, 0.0, CommandGetSetType::Set);
-	CommandEnqueue(NewSettings.MotorIndex, CommandType::CurrentLimit, 0.0, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::Backlash, NewSettings.Backlash, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::Hysteresis, NewSettings.Hysteresis, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::FilterKd, NewSettings.FilterKd, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::ErrorLimit, NewSettings.ErrorLimit, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::FrictionCompensation, NewSettings.FrictionCompensation, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::JerkTime, NewSettings.JerkTime, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::Kd, NewSettings.Kd, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::Ki, NewSettings.Ki, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::Kp, NewSettings.Kp, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::Kv, NewSettings.Kv, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::HomeVelocity, NewSettings.HomeVelocity, CommandGetSetType::Set);
+	CommandEnqueue(NewSettings.MotorIndex, CommandType::HomeTime, NewSettings.HomeTime, CommandGetSetType::Set);
 	CommandEnqueue(NewSettings.MotorIndex, CommandType::Configure, 0.0, CommandGetSetType::Set);
 }
 
@@ -953,13 +952,13 @@ void SMC100Chained::ParseReply()
 	}
 }
 
-void SMC100Chained::UpdateMotorSetting(uint8_t MotorIndex, CommandType SettingType, float SettingValue)
+void SMC100Chained::UpdateMotorSetting(uint8_t MotorAddress, CommandType SettingType, float SettingValue)
 {
-	if (CurrentSettings.MotorIndex == -1)
+	if (CurrentSettings.Address == -1)
 	{
-		CurrentSettings.MotorIndex = MotorIndex;
+		CurrentSettings.Address = MotorAddress;
 	}
-	if (CurrentSettings.MotorIndex == MotorIndex)
+	if (MotorAddress == CurrentSettings.Address)
 	{
 		switch(SettingType)
 		{
@@ -999,9 +998,6 @@ void SMC100Chained::UpdateMotorSetting(uint8_t MotorIndex, CommandType SettingTy
 			case CommandType::HomeTime :
 				CurrentSettings.HomeTime = SettingValue;
 				break;
-			case CommandType::CurrentLimit :
-				CurrentSettings.CurrentLimit = SettingValue;
-				break;
 			default:
 				break;
 		}
@@ -1011,13 +1007,19 @@ void SMC100Chained::UpdateMotorSetting(uint8_t MotorIndex, CommandType SettingTy
 			PrintMotorSettings();
 		}
 		CurrentSettings.Complete = NowComplete;
+		if (Verbose)
+		{
+			Serial.print("<SMC100V>(Setting check ");
+			Serial.print(NowComplete);
+			Serial.print(")\n");
+		}
 	}
 	else
 	{
-		Serial.print("<SMC100Chained>(Error motor setting index of ");
-		Serial.print(MotorIndex);
+		Serial.print("<SMC100Chained>(Error motor setting address of ");
+		Serial.print(MotorAddress);
 		Serial.print(" seen when settting ");
-		Serial.print(CurrentSettings.MotorIndex);
+		Serial.print(CurrentSettings.Address);
 		Serial.print(")\n");
 	}
 }
@@ -1026,6 +1028,8 @@ void SMC100Chained::PrintMotorSettings()
 {
 	Serial.print("[SMCSET](");
 	Serial.print(CurrentSettings.MotorIndex);
+	Serial.print(",Address,");
+	Serial.print(CurrentSettings.Address);
 	Serial.print(",Backlash,");
 	Serial.print(CurrentSettings.Backlash);
 	Serial.print(",Hysteresis,");
@@ -1050,8 +1054,6 @@ void SMC100Chained::PrintMotorSettings()
 	Serial.print(CurrentSettings.HomeVelocity);
 	Serial.print(",HomeTime,");
 	Serial.print(CurrentSettings.HomeTime);
-	Serial.print(",CurrentLimit,");
-	Serial.print(CurrentSettings.CurrentLimit);
 	Serial.print(")\n");
 }
 
@@ -1105,10 +1107,6 @@ bool SMC100Chained::CheckSettingsComplete()
 	{
 		return false;
 	}
-	if (isnan(CurrentSettings.CurrentLimit))
-	{
-		return false;
-	}
 	return true;
 }
 
@@ -1128,7 +1126,6 @@ bool SMC100Chained::IsMotorSetting(CommandType TypeToCheck)
 		case CommandType::Kv :
 		case CommandType::HomeVelocity :
 		case CommandType::HomeTime :
-		case CommandType::CurrentLimit :
 			return true;
 		default:
 			return false;
