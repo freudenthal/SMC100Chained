@@ -1528,10 +1528,10 @@ void SMC100Chained::UpdateStateOnSending()
 		ModeTransitionToWaitOnSentCommand();
 		if (Verbose)
 		{
-			Serial.println("<SMC100CHAINED>(Waiting on configure commit to memory.)");
+			Serial.print("<SMC100CHAINED>(Waiting on configure commit to memory.)\n");
 		}
 	}
-	if ( (CurrentCommandGetOrSet == CommandGetSetType::Get) || (CurrentCommand->GetSetType == CommandGetSetType::GetAlways) )
+	else if ( (CurrentCommandGetOrSet == CommandGetSetType::Get) || (CurrentCommand->GetSetType == CommandGetSetType::GetAlways) )
 	{
 		ModeTransitionToWaitForReply();
 	}
