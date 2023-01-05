@@ -598,6 +598,10 @@ void SMC100Chained::Check()
 		case ModeType::Idle:
 			if (ErrorRecovery)
 			{
+				if (Verbose)
+				{
+					Serial.print("<SMCERROR>(Sending current recovery command.)");
+				}
 				ErrorRecovery = false;
 				SendCurrentCommand();
 			}
@@ -867,6 +871,11 @@ void SMC100Chained::ParseReply()
 			{
 				ErrorRecovery = false;
 				ErrorCount = 0;
+				if ((ErrorBackupCompleteCallback != NULL) && (!ErrorBackupCompleteCallbackFired))
+				{
+					ErrorBackupCompleteCallbackFired = true;
+					ErrorBackupCompleteCallback();
+				}
 			}
 		}
 		else if (CurrentCommand->Command == CommandType::ErrorStatus)
@@ -951,10 +960,6 @@ void SMC100Chained::ParseReply()
 				UpdateMotorSetting(AddressOfReply, CurrentCommand->Command, SettingValue);
 			}
 		}
-		if (CurrentCommandCompleteCallback != NULL)
-		{
-			CurrentCommandCompleteCallback();
-		}
 		if (
 			(CurrentCommand->Command != CommandType::ErrorCommands) &&
 			(CurrentCommand->Command != CommandType::ErrorStatus) &&
@@ -965,14 +970,19 @@ void SMC100Chained::ParseReply()
 		}
 		else
 		{
-			if (ErrorRecovery)
+			if ((CurrentCommandCompleteCallback != NULL) && (!CurrentCommandCompleteCallbackFired))
 			{
-				ModeTransitionToWaitOnSentCommand();
+				CurrentCommandCompleteCallbackFired = true;
+				CurrentCommandCompleteCallback();
 			}
-			else
-			{
-				ModeTransitionToIdle();
-			}
+			//if (ErrorRecovery)
+			//{
+			//	ModeTransitionToWaitOnSentCommand();
+			//}
+			//else
+			//{
+			ModeTransitionToIdle();
+			//}
 		}
 	}
 }
@@ -1034,7 +1044,7 @@ void SMC100Chained::UpdateMotorSetting(uint8_t MotorAddress, CommandType Setting
 		CurrentSettings.Complete = NowComplete;
 		if (Verbose)
 		{
-			Serial.print("<SMC100V>(Setting check ");
+			Serial.print("<SMCV>(Setting check ");
 			Serial.print(NowComplete);
 			Serial.print(")\n");
 		}
@@ -1303,13 +1313,13 @@ bool SMC100Chained::UpdateCommandErrors(uint8_t MotorAddress, char ErrorChar)
 		if (ErrorCount < ErrorCountMaxLimit)
 		{
 			RestoreErrorBackup();
-			SentDelay = 50000;
-			SentTime = millis();
+			//SentDelay = 50000;
+			//SentTime = millis();
 			ErrorRecovery = true;
 			ErrorCount++;
 			if (Verbose)
 			{
-				Serial.print("<SMC100Chained>(Command not allowed during movement. Resending.)\n");
+				Serial.print("<SMCV>(Command not allowed during movement. Resending.)\n");
 			}
 			Handled = true;
 		}
@@ -1568,10 +1578,6 @@ void SMC100Chained::UpdateStateOnSending()
 			MotorState[CurrentCommandMotorIndex].PositionLimitNegative = CurrentCommandParameter;
 		}
 	}
-	if ( (CurrentCommandCompleteCallback != NULL) && (CurrentCommandGetOrSet == CommandGetSetType::Set) )
-	{
-		CurrentCommandCompleteCallback();
-	}
 	if ((CurrentCommand->SentDelay != 0) && (CurrentCommandGetOrSet != CommandGetSetType::Get) && ((int)CurrentCommandParameter == 0))
 	{
 		SentDelay = CurrentCommand->SentDelay;
@@ -1579,7 +1585,7 @@ void SMC100Chained::UpdateStateOnSending()
 		ModeTransitionToWaitOnSentCommand();
 		if (Verbose)
 		{
-			Serial.print("<SMC100CHAINED>(Waiting on configure commit to memory.)\n");
+			Serial.print("<SMCV>(Waiting on configure commit to memory.)\n");
 		}
 	}
 	else if ( (CurrentCommandGetOrSet == CommandGetSetType::Get) || (CurrentCommand->GetSetType == CommandGetSetType::GetAlways) )
@@ -1596,6 +1602,11 @@ void SMC100Chained::UpdateStateOnSending()
 	}
 	else
 	{
+		if ( (CurrentCommandCompleteCallback != NULL) && (CurrentCommandGetOrSet == CommandGetSetType::Set) && (!CurrentCommandCompleteCallbackFired) )
+		{
+			CurrentCommandCompleteCallbackFired = true;
+			CurrentCommandCompleteCallback();
+		}
 		ModeTransitionToIdle();
 	}
 }
@@ -1704,13 +1715,18 @@ void SMC100Chained::CommandEnqueue(uint8_t MotorIndex, const CommandStruct* Comm
 }
 void SMC100Chained::RestoreErrorBackup()
 {
-	CurrentCommand = ErrorBackupCommand;
-	CurrentCommandParameter = ErrorBackupParameter;
-	CurrentCommandAddress = ErrorBackupAddress;
-	CurrentCommandGetOrSet = ErrorBackupGetOrSet;
-	CurrentCommandMotorIndex = ErrorBackupMotorIndex;
-	CurrentCommandCompleteCallback = ErrorBackupCompleteCallback;
-	CurrentCommandCompleteCallbackFired = ErrorBackupCompleteCallbackFired;
+	if (Verbose)
+	{
+		Serial.print("<SMCV>(Recover error backup.)\n");
+	}
+	CommandEnqueue(ErrorBackupMotorIndex, ErrorBackupCommand, ErrorBackupParameter, ErrorBackupGetOrSet, ErrorBackupCompleteCallback);
+	//CurrentCommand = ErrorBackupCommand;
+	//CurrentCommandParameter = ErrorBackupParameter;
+	//CurrentCommandAddress = ErrorBackupAddress;
+	//CurrentCommandGetOrSet = ErrorBackupGetOrSet;
+	//CurrentCommandMotorIndex = ErrorBackupMotorIndex;
+	//CurrentCommandCompleteCallback = ErrorBackupCompleteCallback;
+	//CurrentCommandCompleteCallbackFired = ErrorBackupCompleteCallbackFired;
 }
 void SMC100Chained::SendErrorCommands(uint8_t MotorIndex)
 {
